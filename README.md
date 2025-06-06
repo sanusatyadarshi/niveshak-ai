@@ -44,6 +44,7 @@ cd niveshak-ai
 ```
 
 The setup script will:
+
 - Create a Python virtual environment
 - Install all dependencies
 - Generate configuration templates

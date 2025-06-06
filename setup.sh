@@ -43,7 +43,7 @@ echo "📍 Setting up configuration..."
 
 # Create settings.yaml if it doesn't exist
 if [ ! -f "config/settings.yaml" ]; then
-    cat > config/settings.yaml << EOF
+    cat >config/settings.yaml <<EOF
 # NiveshakAI Configuration
 app:
   name: "NiveshakAI"
@@ -90,7 +90,7 @@ fi
 
 # Create persona.yaml if it doesn't exist
 if [ ! -f "config/persona.yaml" ]; then
-    cat > config/persona.yaml << EOF
+    cat >config/persona.yaml <<EOF
 # Investor Persona Configuration
 investor_profile:
   name: "Default Investor"
