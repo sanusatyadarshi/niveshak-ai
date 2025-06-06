@@ -334,146 +334,112 @@ Fisher emphasizes quality over quantity - find exceptional companies and hold
 them for the long term rather than frequent trading.
 ```
 
-## Data Backup and Restore
+## Data Backup & Restore
 
-### 🔒 Protecting Your Investment Knowledge
+🔒 **Protect Your Investment Knowledge Base**
 
-Your NiveshakAI system contains valuable data that took time to build:
+NiveshakAI includes a comprehensive backup and restore system to protect your valuable data, including:
 
-- **Vector Database**: 15M of processed embeddings from investment books
-- **Knowledge Base**: Philip Fisher's investment wisdom (913 chunks) + your added books
-- **Configuration**: Your personalized investor profile and settings
-- **Embeddings Cache**: Processed text embeddings for faster queries
+- Vector database with 913+ chunks of Philip Fisher's wisdom
+- Your personal investment books and PDFs
+- Configuration files and settings
+- Embeddings cache and analysis history
 
-### Backup Your Data
-
-#### Create a Full Backup
+### Quick Backup Commands
 
 ```bash
-# Create a complete backup of all NiveshakAI data
+# Create a complete backup
 ./scripts/backup_data.sh
-```
 
-This creates a timestamped archive in `~/niveshak-ai-backups/` containing:
-
-- ✅ **Vector Database** (Qdrant/Weaviate storage)
-- ✅ **Knowledge Base** (PDF books and documents)
-- ✅ **Embeddings Cache** (for faster restarts)
-- ✅ **Configuration Files** (settings.yaml, persona.yaml)
-- ✅ **Environment Settings** (.env file)
-- ✅ **Recent Logs** (last 30 days)
-
-#### Manage Your Backups
-
-```bash
 # List all available backups
 ./scripts/manage_backups.sh list
 
-# Show detailed information about a backup
+# Restore from the latest backup
+./scripts/restore_data.sh latest
+
+# Get detailed backup information
 ./scripts/manage_backups.sh info latest
-./scripts/manage_backups.sh info niveshak_backup_20250606_175102.tar.gz
+```
+
+### Backup Features
+
+- **📦 Complete System Backup**: Vector databases, books, configs, and embeddings
+- **🔍 Integrity Verification**: SHA256 checksums ensure data integrity
+- **🗂️ Metadata Tracking**: JSON metadata with backup details and file counts
+- **🧹 Automatic Cleanup**: Keeps last 5 backups automatically
+- **⚡ Selective Restore**: Choose specific components to restore
+- **🔒 Local Storage**: Backups stored in `~/niveshak-ai-backups/`
+
+### Backup Management
+
+```bash
+# View backup storage usage
+./scripts/manage_backups.sh size
 
 # Verify backup integrity
 ./scripts/manage_backups.sh verify latest
 
-# Check total backup storage usage
-./scripts/manage_backups.sh size
+# Delete old backups (keep last 3)
+./scripts/manage_backups.sh cleanup 3
 
-# Clean up old backups (keeps last 5)
-./scripts/manage_backups.sh cleanup
-
-# Create an automated backup
+# Automated backup (for cron jobs)
 ./scripts/manage_backups.sh auto-backup
 ```
 
-### Restore Your Data
-
-#### Full Restore
+### Restore Options
 
 ```bash
-# Restore from the latest backup
-./scripts/restore_data.sh latest
+# Full restore (replaces all data)
+./scripts/restore_data.sh backup_20241201_143022.tar.gz
 
-# Restore from a specific backup
-./scripts/restore_data.sh niveshak_backup_20250606_175102.tar.gz
+# Selective restore (choose components)
+./scripts/restore_data.sh latest --selective
 
-# Preview what would be restored (dry run)
+# Dry run (see what would be restored)
 ./scripts/restore_data.sh latest --dry-run
 
-# Force restore without confirmation prompts
+# Force restore (skip confirmations)
 ./scripts/restore_data.sh latest --force
 ```
 
-#### Selective Restore
+### What Gets Backed Up
 
-```bash
-# Choose specific components to restore
-./scripts/restore_data.sh latest --selective
-```
-
-This allows you to restore only specific parts:
-
-- Vector Database (Qdrant/Weaviate)
-- Knowledge Base (Books)
-- Embeddings Cache
-- Configuration Files
-- Environment Settings
+- **Vector Database**: Qdrant storage with all embeddings
+- **Knowledge Base**: PDF books and investment materials
+- **Configuration**: Settings, persona, and environment files
+- **Embeddings Cache**: Pre-computed embeddings for faster access
+- **Recent Logs**: Last 30 days of system logs
 
 ### Backup Best Practices
 
-1. **Regular Backups**: Create backups before major changes
+1. **Regular Backups**: Run weekly or after adding new books
+2. **Before Updates**: Always backup before system updates
+3. **Test Restores**: Periodically verify backup integrity
+4. **External Storage**: Copy backups to external drives/cloud
+5. **Document Changes**: Note what books/data you've added
 
-   ```bash
-   # Before adding new books
-   ./scripts/backup_data.sh
-   python -m src.cli.ingest_books --directory "data/books/"
-   ```
+### Example Backup Workflow
 
-2. **Pre-Update Backups**: Backup before system updates
+```bash
+# 1. Check current data size
+du -sh data/
 
-   ```bash
-   ./scripts/backup_data.sh
-   pip install -r requirements.txt --upgrade
-   ```
+# 2. Create backup before adding new books
+./scripts/backup_data.sh
 
-3. **Weekly Automated Backups**: Set up a cron job (optional)
+# 3. Add your new investment books
+cp ~/Downloads/new-book.pdf data/books/
+python -m src.cli.ingest_books --file "data/books/new-book.pdf"
 
-   ```bash
-   # Add to crontab for weekly backups (Sundays at 2 AM)
-   0 2 * * 0 cd /path/to/niveshak-ai && ./scripts/backup_data.sh
-   ```
+# 4. Verify everything works
+python test_rag.py
 
-4. **Verify Integrity**: Regularly verify your backups
-   ```bash
-   ./scripts/manage_backups.sh verify latest
-   ```
+# 5. Create another backup with new data
+./scripts/backup_data.sh
 
-### Backup Storage
-
-- **Location**: `~/niveshak-ai-backups/`
-- **Format**: Compressed tar.gz archives with SHA256 checksums
-- **Retention**: Automatically keeps last 5 backups (configurable)
-- **Typical Size**: 8-20MB (depending on your knowledge base size)
-
-### Migration Between Systems
-
-To move NiveshakAI to a new computer:
-
-1. **On old system**: Create backup
-
-   ```bash
-   ./scripts/backup_data.sh
-   ```
-
-2. **Transfer backup**: Copy the `.tar.gz` file to new system
-
-3. **On new system**: Set up NiveshakAI and restore
-   ```bash
-   git clone <repo>
-   cd niveshak-ai
-   ./setup.sh
-   ./scripts/restore_data.sh /path/to/backup.tar.gz
-   ```
+# 6. List your backups
+./scripts/manage_backups.sh list
+```
 
 ## Troubleshooting
 
