@@ -49,7 +49,7 @@ check_source() {
         error "Project directory not found: $PROJECT_DIR"
         exit 1
     fi
-    
+
     if [ ! -d "$PROJECT_DIR/data" ]; then
         error "Data directory not found: $PROJECT_DIR/data"
         exit 1
@@ -59,14 +59,14 @@ check_source() {
 # Backup vector database (Qdrant)
 backup_vector_db() {
     log "📊 Backing up Qdrant vector database..."
-    
+
     if [ -d "$PROJECT_DIR/data/qdrant_storage" ]; then
         tar -czf "$BACKUP_PATH/qdrant_storage.tar.gz" -C "$PROJECT_DIR/data" qdrant_storage/
         log "✅ Qdrant database backed up ($(du -sh "$PROJECT_DIR/data/qdrant_storage" | cut -f1))"
     else
         warning "Qdrant storage directory not found"
     fi
-    
+
     # Also backup Weaviate if exists
     if [ -d "$PROJECT_DIR/data/weaviate_data" ]; then
         tar -czf "$BACKUP_PATH/weaviate_data.tar.gz" -C "$PROJECT_DIR/data" weaviate_data/
@@ -77,7 +77,7 @@ backup_vector_db() {
 # Backup knowledge base (books)
 backup_books() {
     log "📚 Backing up knowledge base (books)..."
-    
+
     if [ -d "$PROJECT_DIR/data/books" ]; then
         tar -czf "$BACKUP_PATH/books.tar.gz" -C "$PROJECT_DIR/data" books/
         log "✅ Books backed up ($(du -sh "$PROJECT_DIR/data/books" | cut -f1))"
@@ -89,7 +89,7 @@ backup_books() {
 # Backup embeddings cache
 backup_embeddings() {
     log "🧠 Backing up embeddings cache..."
-    
+
     if [ -d "$PROJECT_DIR/data/embeddings" ]; then
         tar -czf "$BACKUP_PATH/embeddings.tar.gz" -C "$PROJECT_DIR/data" embeddings/
         log "✅ Embeddings cache backed up"
@@ -99,12 +99,12 @@ backup_embeddings() {
 # Backup configuration files
 backup_config() {
     log "⚙️ Backing up configuration files..."
-    
+
     if [ -d "$PROJECT_DIR/config" ]; then
         cp -r "$PROJECT_DIR/config" "$BACKUP_PATH/"
         log "✅ Configuration files backed up"
     fi
-    
+
     # Backup .env if exists
     if [ -f "$PROJECT_DIR/.env" ]; then
         cp "$PROJECT_DIR/.env" "$BACKUP_PATH/"
@@ -115,7 +115,7 @@ backup_config() {
 # Backup logs (recent only)
 backup_logs() {
     log "📝 Backing up recent logs..."
-    
+
     if [ -d "$PROJECT_DIR/logs" ]; then
         # Only backup logs from last 30 days
         find "$PROJECT_DIR/logs" -name "*.log" -mtime -30 -exec cp {} "$BACKUP_PATH/" \; 2>/dev/null || true
@@ -126,8 +126,8 @@ backup_logs() {
 # Create backup metadata
 create_metadata() {
     log "📋 Creating backup metadata..."
-    
-    cat > "$BACKUP_PATH/backup_info.json" << EOF
+
+    cat >"$BACKUP_PATH/backup_info.json" <<EOF
 {
   "backup_timestamp": "${TIMESTAMP}",
   "backup_date": "$(date -Iseconds)",
@@ -153,23 +153,23 @@ create_metadata() {
   }
 }
 EOF
-    
+
     log "✅ Backup metadata created"
 }
 
 # Create backup archive
 create_archive() {
     log "📦 Creating final backup archive..."
-    
+
     cd "$BACKUP_DIR"
     tar -czf "${BACKUP_NAME}.tar.gz" "$BACKUP_NAME/"
-    
+
     # Calculate checksums
-    shasum -a 256 "${BACKUP_NAME}.tar.gz" > "${BACKUP_NAME}.tar.gz.sha256"
-    
+    shasum -a 256 "${BACKUP_NAME}.tar.gz" >"${BACKUP_NAME}.tar.gz.sha256"
+
     # Remove uncompressed backup directory
     rm -rf "$BACKUP_NAME"
-    
+
     ARCHIVE_SIZE=$(du -sh "${BACKUP_NAME}.tar.gz" | cut -f1)
     log "✅ Final archive created: ${BACKUP_NAME}.tar.gz (${ARCHIVE_SIZE})"
 }
@@ -177,11 +177,11 @@ create_archive() {
 # Cleanup old backups (keep last 5)
 cleanup_old_backups() {
     log "🧹 Cleaning up old backups (keeping last 5)..."
-    
+
     cd "$BACKUP_DIR"
     ls -1t niveshak_backup_*.tar.gz 2>/dev/null | tail -n +6 | xargs rm -f || true
     ls -1t niveshak_backup_*.tar.gz.sha256 2>/dev/null | tail -n +6 | xargs rm -f || true
-    
+
     REMAINING=$(ls -1 niveshak_backup_*.tar.gz 2>/dev/null | wc -l || echo 0)
     log "✅ Cleanup complete. ${REMAINING} backups retained."
 }
@@ -197,7 +197,7 @@ main() {
     create_metadata
     create_archive
     cleanup_old_backups
-    
+
     echo ""
     echo -e "${GREEN}🎉 Backup completed successfully!${NC}"
     echo "======================================"
@@ -214,30 +214,30 @@ main() {
 
 # Handle command line arguments
 case "${1:-backup}" in
-    "backup"|"")
-        main
-        ;;
-    "help"|"-h"|"--help")
-        echo "NiveshakAI Data Backup Script"
-        echo ""
-        echo "Usage: $0 [command]"
-        echo ""
-        echo "Commands:"
-        echo "  backup    Create a new backup (default)"
-        echo "  help      Show this help message"
-        echo ""
-        echo "The backup includes:"
-        echo "  • Vector database (Qdrant/Weaviate)"
-        echo "  • Knowledge base (PDF books)"
-        echo "  • Embeddings cache"
-        echo "  • Configuration files"
-        echo "  • Recent logs"
-        echo ""
-        echo "Backups are stored in: $BACKUP_DIR"
-        ;;
-    *)
-        error "Unknown command: $1"
-        echo "Use '$0 help' for usage information."
-        exit 1
-        ;;
+"backup" | "")
+    main
+    ;;
+"help" | "-h" | "--help")
+    echo "NiveshakAI Data Backup Script"
+    echo ""
+    echo "Usage: $0 [command]"
+    echo ""
+    echo "Commands:"
+    echo "  backup    Create a new backup (default)"
+    echo "  help      Show this help message"
+    echo ""
+    echo "The backup includes:"
+    echo "  • Vector database (Qdrant/Weaviate)"
+    echo "  • Knowledge base (PDF books)"
+    echo "  • Embeddings cache"
+    echo "  • Configuration files"
+    echo "  • Recent logs"
+    echo ""
+    echo "Backups are stored in: $BACKUP_DIR"
+    ;;
+*)
+    error "Unknown command: $1"
+    echo "Use '$0 help' for usage information."
+    exit 1
+    ;;
 esac
