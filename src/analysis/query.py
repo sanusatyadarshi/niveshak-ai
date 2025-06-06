@@ -217,8 +217,27 @@ class QueryEngine:
     def _generate_response(self, context: QueryContext) -> AnalysisResponse:
         """Generate LLM response based on context."""
         try:
-            # Build prompt with persona, context, and query
-            prompt = self._build_prompt(context)
+            # Build sources list
+            sources = [doc['metadata'].get('source', 'Unknown source') for doc in context.retrieved_documents]
+            
+            # Build prompt
+            prompt = f"""You are an expert investment analyst. Answer the following question based on the provided context.
+            If you cannot answer from the context, say so.
+
+            Question: {context.query}
+
+            Context:
+            {context.retrieved_documents}
+
+            Sources: {', '.join(sources)}
+
+            Provide a detailed, well-structured response that:
+            1. Directly answers the question
+            2. Cites specific information from the sources
+            3. Explains the reasoning behind your analysis
+            4. Highlights any important caveats or limitations
+
+            Response:"""
             
             # Call appropriate LLM API based on provider
             if self.llm_provider == 'ollama':
@@ -228,16 +247,18 @@ class QueryEngine:
             else:
                 raise ValueError(f"Unsupported LLM provider: {self.llm_provider}")
             
-            # Parse the response to extract structured components
-            # For now, we'll use the full response as the answer
-            # In a more advanced implementation, we could parse specific sections
+            # Format sources to include content
+            sources = []
+            for doc in context.retrieved_documents[:3]:
+                source = f"{doc['metadata'].get('source', 'Knowledge Base')}: {doc['content'][:150]}..."
+                sources.append(source)
             
             return AnalysisResponse(
                 query=context.query,
                 answer=ai_response,
                 reasoning="Analysis based on retrieved knowledge and investment persona",
                 confidence_score=0.85,  # Could be calculated based on retrieval scores
-                sources=[doc['metadata'].get('source_file', 'Knowledge Base') for doc in context.retrieved_documents[:3]],
+                sources=sources,
                 recommendations=self._extract_recommendations(ai_response),
                 timestamp=datetime.now()
             )
@@ -248,7 +269,7 @@ class QueryEngine:
             return AnalysisResponse(
                 query=context.query,
                 answer="I apologize, but I encountered an error generating the analysis. Please check your API configuration and try again.",
-                reasoning="Error in LLM processing",
+                reasoning="Error in response generation",
                 confidence_score=0.0,
                 sources=[],
                 recommendations=[],

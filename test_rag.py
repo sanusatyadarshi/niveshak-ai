@@ -63,7 +63,8 @@ def test_vector_search():
         print(f"✅ Vector search returned {len(results)} results")
         
         if results:
-            print(f"   First result: {results[0]['content'][:100]}...")
+            content, metadata, score = results[0]  # Unpack the tuple
+            print(f"   First result: {content[:100]}...")
         
         return True
     except Exception as e:

@@ -46,10 +46,9 @@ def demo_rag_pipeline():
             print(response.answer[:300] + "..." if len(response.answer) > 300 else response.answer)
             
             if response.sources:
-                print(f"\n📚 Source excerpts:")
-                for j, source in enumerate(response.sources[:2], 1):  # Show first 2 sources
-                    excerpt = source['content'][:150] + "..." if len(source['content']) > 150 else source['content']
-                    print(f"   {j}. {excerpt}")
+                print("\nSource Excerpts:")
+                for source in response.sources:
+                    print(source)
             
         except Exception as e:
             print(f"❌ Error processing query: {e}")

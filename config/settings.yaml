@@ -26,9 +26,9 @@ cache:
   ttl_hours: 24
 embedding:
   base_url: http://localhost:11434
-  batch_size: 100
-  chunk_overlap: 200
-  chunk_size: 1000
+  batch_size: 50
+  chunk_overlap: 100
+  chunk_size: 500
   model: nomic-embed-text
   provider: ollama
 llm:
@@ -44,9 +44,9 @@ processing:
   max_workers: 4
   parallel_processing: true
   supported_formats:
-  - pdf
-  - txt
-  - docx
+    - pdf
+    - txt
+    - docx
 storage:
   books_dir: data/books
   cache_dir: .cache
@@ -59,6 +59,7 @@ vector_db:
     host: localhost
     port: 6333
     vector_size: 768
+    timeout: 300
   weaviate:
     class_name: NiveshakDocument
     url: http://localhost:8080
