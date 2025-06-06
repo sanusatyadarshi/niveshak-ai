@@ -1,11 +1,11 @@
 # Contributing to NiveshakAI
 
-Welcome! We're excited that you want to contribute to NiveshakAI. This guide will help you get started with development, understanding the architecture, and making meaningful contributions.
+Welcome! We're excited that you want to contribute to NiveshakAI. This guide will help you get started with development, understanding the local RAG architecture, and making meaningful contributions.
 
 ## Table of Contents
 
 - [Development Setup](#development-setup)
-- [Architecture Overview](#architecture-overview)
+- [Local RAG Architecture](#local-rag-architecture)
 - [Knowledge Storage System](#knowledge-storage-system)
 - [PDF Book Ingestion](#pdf-book-ingestion)
 - [Adding New Features](#adding-new-features)
@@ -19,8 +19,9 @@ Welcome! We're excited that you want to contribute to NiveshakAI. This guide wil
 
 - Python 3.10+
 - Git
-- Docker (for vector database)
-- OpenAI API key
+- **[Ollama](https://ollama.ai/)** - For local LLM and embeddings
+- **Docker** - For Qdrant vector database
+- ~~OpenAI API key~~ **No longer needed!** - Runs completely locally
 
 ### Quick Start
 
@@ -32,33 +33,79 @@ Welcome! We're excited that you want to contribute to NiveshakAI. This guide wil
    ./setup.sh
    ```
 
-2. **Activate Virtual Environment**
+2. **Install Ollama and Models**
+
+   ```bash
+   # Install Ollama
+   brew install ollama  # macOS
+   # or curl -fsSL https://ollama.ai/install.sh | sh  # Linux
+
+   # Start Ollama service
+   ollama serve
+
+   # Download required models
+   ollama pull deepseek-r1:7b
+   ollama pull nomic-embed-text
+   ```
+
+3. **Activate Virtual Environment**
 
    ```bash
    source venv/bin/activate
    ```
 
-3. **Configure API Keys**
-   Edit `config/settings.yaml`:
-
-   ```yaml
-   api_keys:
-     openai_api_key: "your-openai-api-key"
-     alpha_vantage_key: "your-alpha-vantage-key"
-   ```
-
-4. **Start Vector Database**
+4. **Start Local Infrastructure**
 
    ```bash
-   ./scripts/run_local_vector_db.sh start
+   # Start Qdrant vector database
+   docker run -p 6333:6333 qdrant/qdrant
    ```
 
-5. **Run Tests**
+5. **Test the Setup**
+
    ```bash
-   python -m pytest tests/ -v
+   # Run comprehensive RAG pipeline test
+   python test_rag.py
    ```
 
-## Architecture Overview
+## Local RAG Architecture
+
+NiveshakAI uses a completely local RAG (Retrieval-Augmented Generation) pipeline that ensures privacy and eliminates API costs.
+
+### System Components
+
+```text
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   User Query    │    │  Vector Search  │    │   Local LLM     │
+│                 │───▶│                 │───▶│                 │
+│ "Fisher's 15    │    │ Qdrant Database │    │ DeepSeek R1 7B  │
+│  points?"       │    │ (768-dim)       │    │ via Ollama      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                        ▲                       │
+         ▼                        │                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Query Embedding │    │  Knowledge Base │    │   AI Response   │
+│                 │    │                 │    │                 │
+│ Nomic-embed-    │    │ 913 chunks from │    │ "Fisher's 15    │
+│ text (local)    │    │ Philip Fisher   │    │  points are..." │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Key Benefits
+
+- **🔒 Privacy**: All data stays on your machine
+- **💰 Zero API Costs**: No OpenAI or external API calls
+- **⚡ Fast**: Local inference and vector search
+- **🌐 Offline**: Works without internet connection
+- **🎯 Specialized**: Pre-loaded with investment knowledge
+
+### Technical Stack
+
+- **LLM**: DeepSeek R1 7B (7.6B parameters, Q4_K_M quantization)
+- **Embeddings**: Nomic-embed-text (137M parameters, 768 dimensions)
+- **Vector DB**: Qdrant (local Docker instance)
+- **Knowledge**: Philip Fisher's "Common Stocks and Uncommon Profits" (913 chunks)
+- **Interface**: CLI with planned web UI
 
 ### Core Components
 

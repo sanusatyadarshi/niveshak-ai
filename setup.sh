@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# Quick setup script for NiveshakAI
-# This script sets up the development environment and basic configuration
+# NiveshakAI Local RAG Setup Script
+# Sets up complete local AI infrastructure with Ollama + Qdrant + Philip Fisher knowledge
 
 set -e
 
-echo "🤖 NiveshakAI Quick Setup"
-echo "========================="
+echo "🚀 NiveshakAI Local RAG Setup"
+echo "============================="
+echo "Setting up complete local AI infrastructure..."
+echo ""
 
 # Check Python version
 echo "📍 Checking Python version..."
@@ -18,6 +20,36 @@ if [ "$(printf '%s\n' "$required_version" "$python_version" | sort -V | head -n1
     exit 1
 fi
 echo "✅ Python version: $python_version"
+
+# Check if Ollama is installed
+echo "📍 Checking Ollama installation..."
+if command -v ollama &>/dev/null; then
+    echo "✅ Ollama is installed"
+else
+    echo "❌ Ollama not found. Installing Ollama..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        if command -v brew &>/dev/null; then
+            brew install ollama
+        else
+            echo "Please install Homebrew first: https://brew.sh/"
+            exit 1
+        fi
+    else
+        # Linux
+        curl -fsSL https://ollama.ai/install.sh | sh
+    fi
+    echo "✅ Ollama installed"
+fi
+
+# Check if Docker is installed
+echo "📍 Checking Docker installation..."
+if command -v docker &>/dev/null; then
+    echo "✅ Docker is installed"
+else
+    echo "❌ Docker not found. Please install Docker: https://docker.com/get-started"
+    exit 1
+fi
 
 # Create virtual environment
 echo "📍 Creating virtual environment..."
@@ -33,10 +65,10 @@ echo "📍 Activating virtual environment..."
 source venv/bin/activate
 
 # Install dependencies
-echo "📍 Installing dependencies..."
+echo "📍 Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
-echo "✅ Dependencies installed"
+echo "✅ Python dependencies installed"
 
 # Create configuration files from templates
 echo "📍 Setting up configuration..."
@@ -65,10 +97,24 @@ vector_db:
   
 # Embedding Configuration
 embeddings:
-  provider: "openai"
-  model: "text-embedding-3-small"
+  provider: "ollama"  # Options: openai, ollama
+  model: "nomic-embed-text"  # For Ollama: nomic-embed-text, For OpenAI: text-embedding-3-small
   chunk_size: 1000
   chunk_overlap: 200
+
+# LLM Configuration
+llm:
+  provider: "ollama"  # Options: openai, ollama
+  model: "deepseek-r1:7b"  # For Ollama: deepseek-r1:7b, llama3.2:3b
+  temperature: 0.1
+  max_tokens: 1000
+
+# Local AI Configuration (Ollama)
+ollama:
+  base_url: "http://localhost:11434"
+  models:
+    embedding: "nomic-embed-text"
+    chat: "deepseek-r1:7b"
 
 # Analysis Configuration
 analysis:
@@ -135,13 +181,72 @@ echo "✅ Created logs directory"
 chmod +x scripts/*.sh
 echo "✅ Made scripts executable"
 
+# Start Ollama service
+echo "📍 Starting Ollama service..."
+if pgrep -x "ollama" >/dev/null; then
+    echo "✅ Ollama service is already running"
+else
+    echo "Starting Ollama service..."
+    ollama serve &
+    sleep 3
+    echo "✅ Ollama service started"
+fi
+
+# Download required models
+echo "📍 Downloading AI models..."
+echo "This may take several minutes for the first time..."
+
+# Download embedding model
+echo "Downloading Nomic embedding model..."
+ollama pull nomic-embed-text
+echo "✅ Nomic embedding model ready"
+
+# Download LLM model (DeepSeek R1 7B)
+echo "Downloading DeepSeek R1 7B model..."
+ollama pull deepseek-r1:7b
+echo "✅ DeepSeek R1 7B model ready"
+
+# Start Qdrant vector database
+echo "📍 Starting Qdrant vector database..."
+if docker ps | grep -q qdrant; then
+    echo "✅ Qdrant is already running"
+else
+    docker run -d -p 6333:6333 -v $(pwd)/data/qdrant_storage:/qdrant/storage qdrant/qdrant
+    sleep 5
+    echo "✅ Qdrant vector database started"
+fi
+
+# Test the installation
+echo "📍 Testing installation..."
+if python3 test_rag.py; then
+    echo "✅ Installation test passed"
+else
+    echo "⚠️ Installation test failed - check the output above"
+fi
+
 echo ""
-echo "🎉 Setup complete!"
+echo "🎉 NiveshakAI Local RAG Setup Complete!"
+echo "========================================="
 echo ""
-echo "Next steps:"
-echo "1. Edit config/settings.yaml to add your API keys"
-echo "2. Customize config/persona.yaml to match your investment style"
-echo "3. Start a vector database: ./scripts/run_local_vector_db.sh start"
-echo "4. Test the installation: python3 main.py --help"
+echo "✅ Local AI Infrastructure Ready:"
+echo "   • DeepSeek R1 7B (Chat LLM)"
+echo "   • Nomic-embed-text (Embeddings)"
+echo "   • Qdrant Vector Database"
+echo "   • Philip Fisher knowledge pre-loaded"
 echo ""
-echo "For more information, see README.md"
+echo "🚀 Quick Start:"
+echo "1. Test the system: python3 test_rag.py"
+echo "2. Ask investment questions: python3 -m src.cli.analyze --query \"What are Fisher's 15 points?\""
+echo "3. Add more books: python3 -m src.cli.ingest_books --file data/books/your_book.pdf"
+echo "4. Demo analysis: jupyter notebook demo_analysis.ipynb"
+echo ""
+echo "📁 Important directories:"
+echo "   • data/books/ - Add PDF investment books here"
+echo "   • config/ - Customize your investment persona"
+echo "   • logs/ - View system logs"
+echo ""
+echo "🔧 Configuration:"
+echo "   • Edit config/persona.yaml for your investment style"
+echo "   • API keys in .env (optional, for backup OpenAI access)"
+echo ""
+echo "📖 For more information, see README.md and CONTRIBUTING.md"

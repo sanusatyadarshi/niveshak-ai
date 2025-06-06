@@ -9,18 +9,27 @@
 **NiveshakAI** is a personal AI agent designed to help you become a smarter, data-driven fundamental investor.  
 It reads and understands your chosen investing books, analyzes company annual reports, and provides buy/sell recommendations along with detailed explanations — all shaped by your personalized investor philosophy.
 
-Inspired by classic investing wisdom and powered by modern LLMs and vector search, NiveshakAI is your intelligent investing companion.
+**🚀 Now featuring a complete local RAG pipeline!** NiveshakAI runs entirely on your machine using:
+
+- **Local LLM**: DeepSeek R1 7B via Ollama (no API costs!)
+- **Local Embeddings**: Nomic-embed-text model
+- **Local Vector DB**: Qdrant for knowledge storage
+- **Ready Knowledge Base**: Philip Fisher's "Common Stocks and Uncommon Profits" pre-ingested
+
+Inspired by classic investing wisdom and powered by modern local AI, NiveshakAI is your intelligent investing companion.
 
 ---
 
 ## Features
 
-- 📚 Ingest investing books from any market (e.g. Warrent Buffet, Philip Fisher)
-- 📄 Parse and analyze company annual reports from multiple markets
-- 🧠 Embed your investor persona and risk profile for tailored recommendations
-- 📊 Perform fundamental valuations like Discounted Cash Flow (DCF) and P/E ratio
-- 🤖 Answer your queries with transparent explanations and data-backed reasoning
-- 🛠️ CLI interface for easy interaction, with future plans for web UI
+- 📚 **Local Knowledge Ingestion**: Automatically process investing books (PDF, EPUB) with local embeddings
+- 📄 **Annual Report Analysis**: Parse and analyze company financial reports
+- 🧠 **Personalized AI**: Embed your investor persona and risk profile for tailored recommendations
+- 📊 **Fundamental Valuations**: DCF, P/E ratio, and other valuation models
+- 🤖 **Local RAG Pipeline**: Ask investment questions powered by your ingested knowledge base
+- 🛠️ **Privacy-First**: Runs entirely locally with Ollama (DeepSeek R1) + Qdrant - no data leaves your machine
+- 📱 **CLI Interface**: Easy command-line interaction with future web UI planned
+- ⚡ **Pre-loaded Content**: Ships with Philip Fisher's investment wisdom ready to query
 
 ---
 
@@ -30,8 +39,9 @@ Inspired by classic investing wisdom and powered by modern LLMs and vector searc
 
 - Python 3.10+
 - `pip` package manager
-- [Qdrant](https://qdrant.tech/) or [Weaviate](https://weaviate.io/) vector database running locally or remotely
-- OpenAI API key or compatible LLM provider
+- **[Ollama](https://ollama.ai/)** - For local LLM and embedding models
+- **[Qdrant](https://qdrant.tech/)** - Local vector database (auto-started)
+- ~~OpenAI API key~~ **No longer needed!** - Runs completely offline
 
 ### Installation
 
@@ -47,8 +57,60 @@ The setup script will:
 
 - Create a Python virtual environment
 - Install all dependencies
+- Download and setup Ollama with required models
+- Start local Qdrant vector database
 - Generate configuration templates
 - Set up directory structure
+
+#### Manual Setup
+
+1. **Install Ollama**:
+
+```bash
+# macOS
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama service
+ollama serve
+```
+
+2. **Download Required Models**:
+
+```bash
+# Large language model for analysis
+ollama pull deepseek-r1:7b
+
+# Embedding model for vector search
+ollama pull nomic-embed-text
+```
+
+3. **Install NiveshakAI**:
+
+```bash
+git clone https://github.com/<your-github-username>/niveshak-ai.git
+cd niveshak-ai
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start Qdrant vector database
+docker run -p 6333:6333 qdrant/qdrant
+```
+
+4. **Verify Installation**:
+
+```bash
+# Test the complete RAG pipeline
+python test_rag.py
+```
+
 - Make scripts executable
 
 #### Manual Setup
@@ -83,26 +145,59 @@ pip install -r requirements.txt
 
 ### Usage
 
-#### 1. Start Vector Database
+## Quick Start
+
+### 1. Test the Pre-loaded Knowledge Base
+
+NiveshakAI comes with Philip Fisher's "Common Stocks and Uncommon Profits" already ingested! Try it immediately:
 
 ```bash
-./scripts/run_local_vector_db.sh start
+# Ask about Philip Fisher's investment principles
+python -m src.cli.analyze ask --query "What are Philip Fisher's 15 points for stock analysis?"
+
+# Learn about growth investing
+python -m src.cli.analyze ask --query "How does Fisher identify quality growth companies?"
+
+# Understand the scuttlebutt method
+python -m src.cli.analyze ask --query "What is Fisher's scuttlebutt method for research?"
 ```
 
-#### 2. Ingest Finance Books (PDF Format)
+### 2. Add Your Own Investment Books
 
-Place your finance books in the `data/books/` directory and run:
+Place your investing books (PDF format) in `data/books/` and ingest them:
 
 ```bash
-python3 -m src.cli.ingest_books --directory data/books/
+# Ingest a single book
+python -m src.cli.ingest_books --file "data/books/your-investment-book.pdf"
+
+# Ingest all books in the directory
+python -m src.cli.ingest_books --directory "data/books/"
 ```
 
-**Supported Books:**
+**Supported book examples**:
 
 - Investment classics (Warren Buffett, Benjamin Graham, Peter Lynch)
 - Financial analysis textbooks
 - Sector-specific investment guides
 - Any PDF finance/investing content
+
+### 3. Company Analysis (Coming Soon)
+
+```bash
+# Analyze a specific company
+python -m src.cli.analyze company --symbol AAPL --query "Is Apple a good long-term investment?"
+
+# Compare multiple companies
+python -m src.cli.analyze compare --symbols AAPL,MSFT,GOOGL
+```
+
+### 4. Demo Analysis
+
+Run the Jupyter notebook for a complete demonstration:
+
+```bash
+jupyter notebook demo_analysis.ipynb
+```
 
 #### 3. Add Annual Reports
 
@@ -132,25 +227,34 @@ jupyter notebook demo_analysis.ipynb
 
 ## Knowledge Storage
 
-NiveshakAI stores knowledge in multiple layers:
+NiveshakAI uses a modern local-first architecture:
 
 ### 1. **Vector Database** (Primary Knowledge Store)
 
 - **Location**: Local Qdrant instance (`./data/qdrant_storage/`)
+- **Dimensions**: 768 (Nomic embeddings)
 - **Content**:
-  - Embedded finance book chapters
-  - Annual report sections
-  - Company analysis chunks
-  - Investment frameworks
+  - ✅ Philip Fisher's "Common Stocks and Uncommon Profits" (913 chunks)
+  - 📚 Your additional finance books and investment content
+  - 📄 Company annual reports (when added)
+  - 🧠 Investment frameworks and analysis patterns
 
-### 2. **Raw Data Storage**
+### 2. **Local AI Stack**
 
-```
+- **LLM**: DeepSeek R1 7B via Ollama (completely offline)
+- **Embeddings**: Nomic-embed-text model (137M parameters)
+- **Vector Search**: Qdrant for semantic similarity search
+- **Privacy**: Zero data leaves your machine
+
+### 3. **Raw Data Storage**
+
+```text
 data/
 ├── books/                    # Finance books (PDF, EPUB)
+│   └── Common-Stocks-and-Uncommon-Profits.pdf  ✅ Pre-loaded
 ├── annual_reports/           # Company annual reports
 ├── qdrant_storage/          # Vector database files
-└── embeddings/              # Cached embeddings
+└── embeddings/              # Cached embeddings (optional)
 ```
 
 ### 3. **Analysis Results**
@@ -197,87 +301,104 @@ Based on the analysis, NiveshakAI provides:
 
 ## Example Analysis Output
 
-```
+```text
 ================================================================================
-📊 NIVESHAKAI ANALYSIS: Trent Limited (TRENT)
+📊 NIVESHAKAI ANALYSIS: Investment Question Answered
 ================================================================================
 
-🏢 SECTION 1: BUSINESS & QUALITATIVE ANALYSIS
---------------------------------------------------
-• What Does Company Do: Trent Limited operates in the Retail sector with strong market presence
-• Promoters Background: Experienced management team with strong track record
-• Competitors: Major players in Retail include established market leaders
-• Revenue Mix: Diversified revenue streams within Retail
-• Entry Barriers: High barriers due to capital requirements and regulatory compliance
+🤔 QUESTION: What are Philip Fisher's key principles for growth investing?
 
-💰 SECTION 2: FINANCIAL METRICS & JUDGEMENT
+🧠 AI ANALYSIS (Powered by DeepSeek R1 + Philip Fisher's Knowledge):
 --------------------------------------------------
-• Gross Profit Margin: 40.0% | ✅ Strong
-• Roe: 24.9% | ✅ Excellent
-• Debt Level: 0.19 | ✅ Low
-• Cash Flow Operations: 21.8% | ✅ Strong
+Based on Philip Fisher's "Common Stocks and Uncommon Profits," here are his key
+principles for identifying exceptional growth companies:
 
-📈 SECTION 3: RATIO ANALYSIS
---------------------------------------------------
-• Current Ratio: 1.50 | ✅ Healthy
-• Quick Ratio: 1.05 | ✅ Good
-• Roe: 24.9% | ✅ Excellent
-• Roa: 10.3% | ✅ Strong
-• Debt Equity: 0.19 | ✅ Conservative
+🎯 THE 15 POINTS FOR STOCK ANALYSIS:
+1. Sales Growth Potential - Look for companies with products/services that can
+   significantly increase sales over years
+2. Management Determination - Strong commitment to develop new products when
+   current lines mature
+3. R&D Effectiveness - Research efforts that translate into profitable products
+4. Superior Sales Organization - Above-average marketing and distribution
+5. Profit Margin Analysis - Worthwhile profit margins and improvement trends
 
-🎯 INVESTMENT RECOMMENDATION
---------------------------------------------------
-Decision: 🎯 STRONG BUY - Excellent fundamentals across multiple metrics
-Confidence: High
-Summary: Analysis shows 7 positive, 1 neutral, and 0 negative indicators
+[... Full detailed analysis continues ...]
+
+📚 SOURCES FROM KNOWLEDGE BASE:
+• Chapter 3: "What to Buy" - Common Stocks and Uncommon Profits
+• Chapter 8: "The Investor and Market Fluctuations"
+• Chapter 15: "A Different Type of Investment"
+
+🎯 INVESTMENT WISDOM:
+Fisher emphasizes quality over quantity - find exceptional companies and hold
+them for the long term rather than frequent trading.
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### 1. **Vector Database Connection Error**
+#### 1. **Ollama Connection Error**
 
 ```bash
-# Check if Qdrant is running
-./scripts/run_local_vector_db.sh status
+# Check if Ollama is running
+ollama list
 
-# Restart if needed
-./scripts/run_local_vector_db.sh restart
+# Start Ollama if not running
+ollama serve
+
+# Test with a simple query
+ollama run deepseek-r1:7b "Hello, test message"
 ```
 
-#### 2. **PDF Processing Errors**
+#### 2. **Missing Models**
 
 ```bash
-# Install additional dependencies
-pip install PyMuPDF fitz
+# Download required models
+ollama pull deepseek-r1:7b
+ollama pull nomic-embed-text
 
-# Check PDF file integrity
-python3 -c "
+# Verify models are available
+ollama list
+```
+
+#### 3. **Qdrant Database Issues**
+
+```bash
+# Start Qdrant locally
+docker run -p 6333:6333 qdrant/qdrant
+
+# Check if Qdrant is running
+curl http://localhost:6333
+```
+
+#### 4. **PDF Processing Errors**
+
+```bash
+# Install additional dependencies if needed
+pip install PyMuPDF
+
+# Test PDF integrity
+python -c "
 import fitz
 doc = fitz.open('data/books/your_book.pdf')
 print(f'Pages: {doc.page_count}')
 "
 ```
 
-#### 3. **OpenAI API Rate Limits**
+#### 5. **Memory Issues with Large Models**
 
-- Check your API usage in OpenAI dashboard
-- Consider using smaller embedding models
-- Implement retry logic with exponential backoff
-
-#### 4. **Memory Issues with Large PDFs**
-
-- Increase chunk size in `config/settings.yaml`
+- Use smaller models: `ollama pull llama3.2:3b` instead of DeepSeek R1
+- Adjust chunk size in `config/settings.yaml`
 - Process books one at a time
-- Use smaller embedding models
+- Monitor system resources
 
 ### Performance Tips
 
-1. **Optimize Chunk Size**: Adjust based on your content type
-2. **Batch Processing**: Process multiple files in batches
-3. **Caching**: Enable embedding caching for repeated analysis
-4. **Resource Monitoring**: Monitor RAM and disk usage
+1. **Test Pipeline**: Use `python test_rag.py` to verify everything works
+2. **Model Selection**: DeepSeek R1 7B for quality, Llama 3.2 3B for speed
+3. **Batch Processing**: Ingest multiple books efficiently
+4. **Local Storage**: Keep vector database on SSD for faster search
 
 ## Roadmap
 

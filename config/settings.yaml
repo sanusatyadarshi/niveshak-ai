@@ -44,9 +44,9 @@ processing:
   max_workers: 4
   parallel_processing: true
   supported_formats:
-    - pdf
-    - txt
-    - docx
+  - pdf
+  - txt
+  - docx
 storage:
   books_dir: data/books
   cache_dir: .cache
