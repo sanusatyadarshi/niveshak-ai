@@ -262,6 +262,11 @@ def get_company_reports(company_symbol: str, reports_dir: str = "data/reports") 
 class ReportExtractor:
     @staticmethod
     def extract_text_sections(pdf_path):
+        """
+        Extracts text from the PDF and splits it into meaningful sections using common annual report headers.
+        Returns a dict mapping section names to text.
+        """
+        import re
         sections = {}
         with pdfplumber.open(pdf_path) as pdf:
             full_text = ""
@@ -269,18 +274,74 @@ class ReportExtractor:
                 page_text = page.extract_text()
                 if page_text:
                     full_text += page_text + "\n"
-            # Optionally, split into sections using regex/keywords
+
+        # Define common section headers (add more as needed)
+        section_patterns = [
+            r"Management Discussion and Analysis", r"Board's Report", r"Directors' Report",
+            r"Corporate Governance Report", r"Standalone Financial Statements", r"Consolidated Financial Statements",
+            r"Balance Sheet", r"Statement of Profit and Loss", r"Cash Flow Statement", r"Notes to Accounts",
+            r"Auditor's Report", r"Business Overview", r"Company Overview", r"Financial Highlights"
+        ]
+        # Build regex pattern for splitting
+        pattern = r"(" + r"|".join(section_patterns) + r")"
+        # Find all section headers and their positions
+        matches = list(re.finditer(pattern, full_text, re.IGNORECASE))
+        if not matches:
             sections['full_text'] = full_text
+            return sections
+
+        # Split text into sections
+        for i, match in enumerate(matches):
+            section_name = match.group(0).strip()
+            start = match.start()
+            end = matches[i+1].start() if i+1 < len(matches) else len(full_text)
+            section_text = full_text[start:end].strip()
+            sections[section_name] = section_text
+        # Always include full text
+        sections['full_text'] = full_text
         return sections
 
     @staticmethod
     def extract_tables(pdf_path):
+        """
+        Extract tables from the PDF, handling multi-line headers and associating tables with nearby section headers if possible.
+        Returns a list of dicts: { 'section': section_name, 'table': DataFrame }
+        """
+        import re
         tables = []
         with pdfplumber.open(pdf_path) as pdf:
+            last_section = None
             for page in pdf.pages:
+                # Try to find section header on this page
+                page_text = page.extract_text() or ""
+                section_header = None
+                section_patterns = [
+                    r"Management Discussion and Analysis", r"Board's Report", r"Directors' Report",
+                    r"Corporate Governance Report", r"Standalone Financial Statements", r"Consolidated Financial Statements",
+                    r"Balance Sheet", r"Statement of Profit and Loss", r"Cash Flow Statement", r"Notes to Accounts",
+                    r"Auditor's Report", r"Business Overview", r"Company Overview", r"Financial Highlights"
+                ]
+                for pat in section_patterns:
+                    if re.search(pat, page_text, re.IGNORECASE):
+                        section_header = pat
+                        last_section = pat
+                        break
+                # Extract tables
                 for table in page.extract_tables():
-                    df = pd.DataFrame(table[1:], columns=table[0])
-                    tables.append(df)
+                    # Try to handle multi-line headers
+                    if len(table) > 1 and any(cell is None or '\n' in str(cell) for cell in table[0]):
+                        # Merge first two rows as header
+                        header = []
+                        for i in range(len(table[0])):
+                            h1 = str(table[0][i] or "").replace('\n', ' ').strip()
+                            h2 = str(table[1][i] or "").replace('\n', ' ').strip() if len(table) > 1 else ""
+                            header.append((h1 + " " + h2).strip())
+                        data = table[2:]
+                    else:
+                        header = table[0]
+                        data = table[1:]
+                    df = pd.DataFrame(data, columns=header)
+                    tables.append({'section': section_header or last_section, 'table': df})
         return tables
 
     @staticmethod
