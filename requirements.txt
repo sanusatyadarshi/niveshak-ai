@@ -1,0 +1,41 @@
+# Core dependencies
+openai>=1.0.0
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-community>=0.1.0
+
+# Vector databases
+qdrant-client>=1.7.0
+weaviate-client>=3.25.0
+
+# PDF processing
+pypdf2>=3.0.0
+pdfplumber>=0.9.0
+pymupdf>=1.23.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Financial data
+yfinance>=0.2.0
+sec-edgar-downloader>=0.16.0
+
+# CLI and utilities
+click>=8.1.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+rich>=13.0.0
+tqdm>=4.65.0
+
+# Testing and development
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Logging
+loguru>=0.7.0

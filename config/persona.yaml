@@ -1,0 +1,53 @@
+# Your Personal Investor Persona Configuration
+
+# Basic Information
+name: "Your Name"
+investing_experience: "beginner" # beginner, intermediate, advanced
+risk_tolerance: "moderate" # conservative, moderate, aggressive
+
+# Investment Philosophy
+philosophy:
+  style: "value_investing" # value_investing, growth_investing, dividend_investing, etc.
+  time_horizon: "long_term" # short_term, medium_term, long_term
+  preferred_sectors:
+    - "technology"
+    - "healthcare"
+    - "consumer_goods"
+
+  # Key principles from your favorite investors
+  key_principles:
+    - "Buy undervalued companies with strong fundamentals"
+    - "Focus on companies with competitive moats"
+    - "Invest in businesses you understand"
+    - "Long-term perspective over short-term gains"
+
+# Risk Management
+risk_management:
+  max_position_size: 0.10 # Maximum 10% of portfolio in single stock
+  stop_loss_threshold: -0.20 # 20% stop loss
+  profit_taking_threshold: 0.50 # Take profits at 50% gain
+
+# Valuation Preferences
+valuation_methods:
+  primary: "dcf" # dcf, pe_ratio, price_to_book, etc.
+  secondary: "pe_ratio"
+  discount_rate: 0.10 # 10% discount rate for DCF
+  margin_of_safety: 0.30 # 30% margin of safety
+
+# Market Focus
+markets:
+  primary: "US" # US, India, Europe, etc.
+  secondary: []
+
+# Favorite Investment Books/Authors (for personality embedding)
+favorite_books:
+  - "The Intelligent Investor by Benjamin Graham"
+  - "Security Analysis by Benjamin Graham"
+  - "Common Stocks and Uncommon Profits by Philip Fisher"
+
+# Custom investment criteria
+custom_criteria:
+  min_market_cap: 1000000000 # $1B minimum market cap
+  min_roe: 0.15 # 15% minimum ROE
+  max_debt_to_equity: 0.50 # 50% max debt-to-equity ratio
+  min_current_ratio: 1.5 # 1.5x minimum current ratio

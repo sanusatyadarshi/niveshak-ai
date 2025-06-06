@@ -1,0 +1,76 @@
+# General Application Settings
+
+# API Configuration
+api:
+  openai:
+    api_key: "${OPENAI_API_KEY}" # Set in environment variables
+    model: "gpt-4"
+    temperature: 0.1
+    max_tokens: 2000
+
+  # Alternative LLM providers (optional)
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-sonnet-20240229"
+
+  # Financial data APIs
+  alpha_vantage:
+    api_key: "${ALPHA_VANTAGE_API_KEY}"
+
+  financial_modeling_prep:
+    api_key: "${FMP_API_KEY}"
+
+# Vector Database Configuration
+vector_db:
+  provider: "qdrant" # qdrant, weaviate, chroma
+
+  qdrant:
+    host: "localhost"
+    port: 6333
+    collection_name: "niveshak_knowledge"
+    vector_size: 1536 # OpenAI embedding dimension
+
+  weaviate:
+    url: "http://localhost:8080"
+    class_name: "NiveshakDocument"
+
+# Embedding Configuration
+embedding:
+  provider: "openai" # openai, sentence_transformers
+  model: "text-embedding-ada-002"
+  batch_size: 100
+  chunk_size: 1000
+  chunk_overlap: 200
+
+# Data Storage Paths
+storage:
+  books_dir: "data/books"
+  reports_dir: "data/reports"
+  embeddings_dir: "data/embeddings"
+  cache_dir: ".cache"
+
+# Logging Configuration
+logging:
+  level: "INFO" # DEBUG, INFO, WARNING, ERROR
+  file: "logs/niveshak.log"
+  max_file_size: "10MB"
+  backup_count: 5
+
+# Application Settings
+app:
+  name: "NiveshakAI"
+  version: "0.1.0"
+  environment: "development" # development, production
+
+# Data Processing Settings
+processing:
+  max_file_size_mb: 50 # Maximum file size for processing
+  supported_formats: ["pdf", "txt", "docx"]
+  parallel_processing: true
+  max_workers: 4
+
+# Cache Settings
+cache:
+  enabled: true
+  ttl_hours: 24 # Time to live for cached results
+  max_size_mb: 1000 # Maximum cache size
