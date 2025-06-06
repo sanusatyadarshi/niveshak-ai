@@ -36,8 +36,8 @@ Inspired by classic investing wisdom and powered by modern LLMs and vector searc
 ### Installation
 
 ```bash
-git clone https://github.com/<your-github-username>/NiveshakAI.git
-cd NiveshakAI
+git clone https://github.com/<your-github-username>/niveshak-ai.git
+cd niveshak-ai
 python -m venv venv
 source venv/bin/activate   # Linux/Mac
 venv\Scripts\activate      # Windows

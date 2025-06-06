@@ -30,7 +30,7 @@ Examples:
   %(prog)s analyze ask --query "What are the best value investing strategies?"
   %(prog)s analyze compare --companies AAPL,MSFT,GOOGL
 
-For more information, visit: https://github.com/yourusername/NiveshakAI
+For more information, visit: https://github.com/yourusername/niveshak-ai
         """
     )
     
