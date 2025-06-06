@@ -15,6 +15,8 @@ from pathlib import Path
 import yaml
 from dataclasses import dataclass
 from datetime import datetime
+import pdfplumber
+import pandas as pd
 
 from ..utils.pdf_utils import extract_text_from_pdf, extract_tables_from_pdf
 from ..utils.financial_utils import parse_financial_statement, extract_financial_metrics
@@ -255,3 +257,32 @@ def get_company_reports(company_symbol: str, reports_dir: str = "data/reports") 
         })
     
     return reports
+
+
+class ReportExtractor:
+    @staticmethod
+    def extract_text_sections(pdf_path):
+        sections = {}
+        with pdfplumber.open(pdf_path) as pdf:
+            full_text = ""
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+            # Optionally, split into sections using regex/keywords
+            sections['full_text'] = full_text
+        return sections
+
+    @staticmethod
+    def extract_tables(pdf_path):
+        tables = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                for table in page.extract_tables():
+                    df = pd.DataFrame(table[1:], columns=table[0])
+                    tables.append(df)
+        return tables
+
+    @staticmethod
+    def extract_csv(csv_path):
+        return pd.read_csv(csv_path)
