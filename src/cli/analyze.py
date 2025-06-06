@@ -11,9 +11,13 @@ import click
 import json
 from datetime import datetime
 from typing import Optional
+from dotenv import load_dotenv
 
 from ..analysis.query import QueryEngine, AnalysisReportGenerator
 from ..analysis.valuation import DCFAnalyzer, MultipleValuation, create_dcf_analyzer
+
+# Load environment variables from .env file
+load_dotenv()
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)

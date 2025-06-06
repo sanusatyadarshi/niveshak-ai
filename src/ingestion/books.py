@@ -15,7 +15,7 @@ import yaml
 
 from ..utils.pdf_utils import extract_text_from_pdf, chunk_text
 from ..utils.logger import get_logger
-from ..embedding.embedder import VectorStore
+from ..embedding.embedder import EmbeddingManager
 
 logger = get_logger(__name__)
 
@@ -29,7 +29,7 @@ class BookIngester:
             self.config = yaml.safe_load(f)
         
         self.books_dir = Path(self.config['storage']['books_dir'])
-        self.vector_store = VectorStore(self.config['vector_db'])
+        self.embedding_manager = EmbeddingManager(self.config)
         
     def ingest_book(self, file_path: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         """
@@ -102,8 +102,30 @@ class BookIngester:
     
     def _store_chunks(self, chunks: List[str], source_file: str, metadata: Optional[Dict] = None):
         """Store text chunks in vector database."""
-        # TODO: Implement vector storage logic
-        pass
+        try:
+            # Prepare metadata for each chunk
+            chunk_metadata = []
+            for i, chunk in enumerate(chunks):
+                chunk_meta = {
+                    'source_file': source_file,
+                    'chunk_index': i,
+                    'content_type': 'book',
+                    'file_name': Path(source_file).name
+                }
+                if metadata:
+                    chunk_meta.update(metadata)
+                chunk_metadata.append(chunk_meta)
+            
+            # Store chunks using embedding manager
+            success = self.embedding_manager.add_text_documents(chunks, chunk_metadata)
+            if success:
+                logger.info(f"Successfully stored {len(chunks)} chunks from {source_file}")
+            else:
+                logger.error(f"Failed to store chunks from {source_file}")
+                
+        except Exception as e:
+            logger.error(f"Error storing chunks from {source_file}: {str(e)}")
+            raise
 
 
 def list_available_books(books_dir: str = "data/books") -> List[Dict[str, str]]:

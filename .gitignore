@@ -95,17 +95,39 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Data directories
+# Data directories - exclude all content but keep structure
 data/books/*
 data/reports/*
+data/annual_reports/*
 data/embeddings/*
+data/qdrant_storage/*
 !data/books/.gitkeep
 !data/reports/.gitkeep
+!data/annual_reports/.gitkeep
 !data/embeddings/.gitkeep
+!data/qdrant_storage/.gitkeep
+
+# Document formats that might contain proprietary content
+*.pdf
+*.epub
+*.mobi
+*.docx
+*.doc
+*.xls
+*.xlsx
+*.csv
+
+# Analysis output files
+niveshak_analysis.xlsx
+niveshak_summary.csv
+analysis_results.json
+*.analysis.json
 
 # Logs
 *.log
 logs/
+logs/*
+!logs/.gitkeep
 
 # Configuration files with sensitive data
 config/settings.yaml
@@ -114,6 +136,8 @@ config/secrets.yaml
 # Vector database files
 *.qdrant
 *.weaviate
+qdrant_storage/
+weaviate_data/
 
 # IDE
 .vscode/

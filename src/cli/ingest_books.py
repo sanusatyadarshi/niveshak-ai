@@ -10,9 +10,13 @@ import click
 import os
 from pathlib import Path
 from typing import List
+from dotenv import load_dotenv
 
 from ..ingestion.books import BookIngester, list_available_books
 from ..utils.logger import get_logger
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = get_logger(__name__)
 

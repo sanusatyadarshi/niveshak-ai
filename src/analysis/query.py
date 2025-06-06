@@ -13,6 +13,8 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
 import yaml
+from openai import OpenAI
+import ollama
 
 from ..embedding.embedder import EmbeddingManager
 from ..utils.logger import get_logger
@@ -108,9 +110,43 @@ class QueryEngine:
         self.llm_client = self._initialize_llm()
         
     def _initialize_llm(self):
-        """Initialize LLM client (OpenAI, Anthropic, etc.)."""
-        # TODO: Initialize LLM client based on config
-        pass
+        """Initialize LLM client (OpenAI, Ollama, Anthropic, etc.)."""
+        llm_config = self.config.get('llm', {})
+        provider = llm_config.get('provider', 'openai')
+        
+        if provider == 'ollama':
+            # Initialize Ollama client
+            ollama_config = self.config['api']['ollama']
+            self.llm_provider = 'ollama'
+            self.model = ollama_config.get('model', 'deepseek-r1:7b')
+            self.temperature = ollama_config.get('temperature', 0.1)
+            self.max_tokens = ollama_config.get('max_tokens', 2000)
+            logger.info(f"Initialized Ollama client with model: {self.model}")
+            return None  # Ollama uses direct API calls
+            
+        elif provider == 'openai':
+            # Initialize OpenAI client
+            openai_config = self.config['api'].get('openai', {})
+            api_key = openai_config.get('api_key')
+            
+            if api_key and api_key.startswith('${') and api_key.endswith('}'):
+                # Extract environment variable name
+                env_var = api_key[2:-1]  # Remove ${ and }
+                api_key = os.getenv(env_var)
+            
+            if not api_key:
+                raise ValueError("OpenAI API key not found in config or environment")
+            
+            self.llm_provider = 'openai'
+            self.openai_client = OpenAI(api_key=api_key)
+            self.model = openai_config.get('model', 'gpt-3.5-turbo')
+            self.temperature = openai_config.get('temperature', 0.1)
+            self.max_tokens = openai_config.get('max_tokens', 2000)
+            logger.info(f"Initialized OpenAI client with model: {self.model}")
+            return self.openai_client
+            
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")
     
     def process_query(self, query: str, company_symbol: Optional[str] = None) -> AnalysisResponse:
         """
@@ -180,24 +216,106 @@ class QueryEngine:
     
     def _generate_response(self, context: QueryContext) -> AnalysisResponse:
         """Generate LLM response based on context."""
-        # Build prompt with persona, context, and query
-        prompt = self._build_prompt(context)
+        try:
+            # Build prompt with persona, context, and query
+            prompt = self._build_prompt(context)
+            
+            # Call appropriate LLM API based on provider
+            if self.llm_provider == 'ollama':
+                ai_response = self._call_ollama(prompt)
+            elif self.llm_provider == 'openai':
+                ai_response = self._call_openai(prompt)
+            else:
+                raise ValueError(f"Unsupported LLM provider: {self.llm_provider}")
+            
+            # Parse the response to extract structured components
+            # For now, we'll use the full response as the answer
+            # In a more advanced implementation, we could parse specific sections
+            
+            return AnalysisResponse(
+                query=context.query,
+                answer=ai_response,
+                reasoning="Analysis based on retrieved knowledge and investment persona",
+                confidence_score=0.85,  # Could be calculated based on retrieval scores
+                sources=[doc['metadata'].get('source_file', 'Knowledge Base') for doc in context.retrieved_documents[:3]],
+                recommendations=self._extract_recommendations(ai_response),
+                timestamp=datetime.now()
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to generate LLM response: {str(e)}")
+            # Fallback response
+            return AnalysisResponse(
+                query=context.query,
+                answer="I apologize, but I encountered an error generating the analysis. Please check your API configuration and try again.",
+                reasoning="Error in LLM processing",
+                confidence_score=0.0,
+                sources=[],
+                recommendations=[],
+                timestamp=datetime.now()
+            )
+    
+    def _call_ollama(self, prompt: str) -> str:
+        """Call Ollama API for LLM response."""
+        try:
+            response = ollama.chat(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": "You are NiveshakAI, an expert investment advisor with deep knowledge of fundamental analysis. Provide detailed, actionable investment advice based on the user's persona and available data."
+                    },
+                    {"role": "user", "content": prompt}
+                ],
+                options={
+                    "temperature": self.temperature,
+                    "num_predict": self.max_tokens
+                }
+            )
+            return response['message']['content']
+        except Exception as e:
+            logger.error(f"Ollama API call failed: {str(e)}")
+            raise
+    
+    def _call_openai(self, prompt: str) -> str:
+        """Call OpenAI API for LLM response."""
+        try:
+            response = self.openai_client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": "You are NiveshakAI, an expert investment advisor with deep knowledge of fundamental analysis. Provide detailed, actionable investment advice based on the user's persona and available data."
+                    },
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"OpenAI API call failed: {str(e)}")
+            raise
+    
+    def _extract_recommendations(self, ai_response: str) -> List[str]:
+        """Extract recommendations from AI response."""
+        # Simple extraction - look for recommendation keywords
+        recommendations = []
+        lines = ai_response.split('\n')
         
-        # TODO: Call LLM API to generate response
-        # This is a placeholder implementation
-        answer = "Based on your investment philosophy and the available data..."
-        reasoning = "The analysis considers your value investing approach..."
-        recommendations = ["Consider the company's fundamentals", "Check the margin of safety"]
+        in_recommendations = False
+        for line in lines:
+            line = line.strip()
+            if any(keyword in line.lower() for keyword in ['recommendation', 'suggest', 'consider']):
+                in_recommendations = True
+            elif in_recommendations and line.startswith(('•', '-', '1.', '2.', '3.')):
+                recommendations.append(line.lstrip('•-123456789. '))
+            elif in_recommendations and line == '':
+                continue
+            elif in_recommendations and not line.startswith(('•', '-', '1.', '2.', '3.')):
+                in_recommendations = False
         
-        return AnalysisResponse(
-            query=context.query,
-            answer=answer,
-            reasoning=reasoning,
-            confidence_score=0.8,
-            sources=[doc['metadata'].get('source', 'Unknown') for doc in context.retrieved_documents],
-            recommendations=recommendations,
-            timestamp=datetime.now()
-        )
+        return recommendations[:5]  # Return max 5 recommendations
     
     def _build_prompt(self, context: QueryContext) -> str:
         """Build comprehensive prompt for LLM."""

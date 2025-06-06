@@ -8,10 +8,9 @@ __version__ = "0.1.0"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 
-from .ingestion import books, reports
-from .embedding import embedder
-from .analysis import valuation, query
-from .utils import logger
+# Imports removed to avoid circular dependencies
+# Import modules directly when needed
 
-# Initialize logging
+# Initialize logging on first import
+from .utils import logger
 logger.setup_logging()
