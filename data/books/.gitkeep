@@ -1,0 +1,14 @@
+# Books Directory
+
+This directory stores ingested investing books in PDF format.
+
+Books will be processed and chunked for embedding into the vector database.
+
+Example structure:
+```
+books/
+├── warren_buffett_letters.pdf
+├── intelligent_investor.pdf
+├── security_analysis.pdf
+└── ...
+```

@@ -35,6 +35,23 @@ Inspired by classic investing wisdom and powered by modern LLMs and vector searc
 
 ### Installation
 
+#### Quick Setup (Recommended)
+
+```bash
+git clone https://github.com/<your-github-username>/niveshak-ai.git
+cd niveshak-ai
+./setup.sh
+```
+
+The setup script will:
+- Create a Python virtual environment
+- Install all dependencies
+- Generate configuration templates
+- Set up directory structure
+- Make scripts executable
+
+#### Manual Setup
+
 ```bash
 git clone https://github.com/<your-github-username>/niveshak-ai.git
 cd niveshak-ai

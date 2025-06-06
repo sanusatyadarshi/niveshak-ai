@@ -1,0 +1,15 @@
+# Embeddings Directory
+
+This directory stores vector embeddings and database files.
+
+Vector databases (Qdrant/Weaviate) will store embeddings here.
+
+Example structure:
+```
+embeddings/
+├── books_embeddings.db
+├── reports_embeddings.db
+└── metadata/
+    ├── books_index.json
+    └── reports_index.json
+```
