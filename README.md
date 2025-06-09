@@ -4,6 +4,8 @@
 
 ---
 
+### This tool is under active development, expect bugs, broken features etc. 
+
 ## Overview
 
 **NiveshakAI** is a personal AI agent designed to help you become a smarter, data-driven fundamental investor.  
@@ -561,7 +563,7 @@ python -m pytest tests/ -v
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache-2.0 license - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
