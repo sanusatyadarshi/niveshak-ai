@@ -4,7 +4,7 @@
 
 ---
 
-### This tool is under active development, expect bugs, broken features etc. 
+### This tool is under active development. Expect bugs, broken features etc. 
 
 ## Overview
 
