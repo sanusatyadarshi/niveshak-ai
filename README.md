@@ -574,8 +574,8 @@ This project is licensed under the Apache-2.0 license - see the [LICENSE](LICENS
 
 ## Support
 
-- 📧 **Issues**: [GitHub Issues](https://github.com/your-username/niveshak-ai/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/your-username/niveshak-ai/discussions)
+- 📧 **Issues**: [GitHub Issues](https://github.com/sanusatyadarshi/niveshak-ai/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/sanusatyadarshi/niveshak-ai/discussions)
 - 📖 **Documentation**: See `demo_analysis.ipynb` for detailed examples
 - 🤝 **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
 
