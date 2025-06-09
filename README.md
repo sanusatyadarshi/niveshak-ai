@@ -581,4 +581,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **⚠️ Disclaimer**: NiveshakAI is a research and educational tool. All investment decisions should be made after proper due diligence and consultation with qualified financial advisors. Past performance does not guarantee future results.
 
-**🤖 Made with ❤️ by the NiveshakAI team**
+**🤖 Made with ❤️  and LLM by @sanusatyadarshi**
