@@ -123,6 +123,10 @@ niveshak_summary.csv
 analysis_results.json
 *.analysis.json
 
+# Generated reports directory
+reports/
+reports/*
+
 # Logs
 *.log
 logs/

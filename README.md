@@ -9,38 +9,146 @@
 **NiveshakAI** is a personal AI agent designed to help you become a smarter, data-driven fundamental investor.  
 It reads and understands your chosen investing books, analyzes company annual reports, and provides buy/sell recommendations along with detailed explanations — all shaped by your personalized investor philosophy.
 
-**🚀 Now featuring a complete local RAG pipeline!** NiveshakAI runs entirely on your machine using:
+**🚀 Now featuring AI-powered PDF analysis!** NiveshakAI offers multiple analysis modes:
 
-- **Local LLM**: DeepSeek R1 7B via Ollama (no API costs!)
-- **Local Embeddings**: Nomic-embed-text model
-- **Local Vector DB**: Qdrant for knowledge storage
-- **Ready Knowledge Base**: Philip Fisher's "Common Stocks and Uncommon Profits" pre-ingested
+- **🤖 AI-Powered Analysis**: OpenAI GPT-4 for intelligent PDF extraction and analysis (requires API key)
+- **🏠 Local Analysis**: DeepSeek R1 7B via Ollama (no API costs!)
+- **📊 Multi-Year Trend Analysis**: Comprehensive 3-year financial data extraction
+- **🔍 Automated Data Extraction**: Smart parsing of annual reports with AI
 
-Inspired by classic investing wisdom and powered by modern local AI, NiveshakAI is your intelligent investing companion.
+Choose between cloud AI power or complete local privacy based on your preferences.
 
 ---
 
 ## Features
 
-- 📚 **Local Knowledge Ingestion**: Automatically process investing books (PDF, EPUB) with local embeddings
-- 📄 **Annual Report Analysis**: Parse and analyze company financial reports
+- 🤖 **AI-Powered PDF Analysis**: OpenAI GPT-4 intelligently extracts financial data from annual reports
+- 📚 **Local Knowledge Ingestion**: Process investing books (PDF, EPUB) with local embeddings
+- 📄 **Smart Annual Report Analysis**: AI-powered parsing of complex financial documents
 - 🧠 **Personalized AI**: Embed your investor persona and risk profile for tailored recommendations
-- 📊 **Fundamental Valuations**: DCF, P/E ratio, and other valuation models
-- 🤖 **Local RAG Pipeline**: Ask investment questions powered by your ingested knowledge base
-- 🛠️ **Privacy-First**: Runs entirely locally with Ollama (DeepSeek R1) + Qdrant - no data leaves your machine
+- 📊 **Comprehensive Valuations**: DCF, P/E ratio, and AI-enhanced fundamental analysis
+- 🤖 **Dual AI Pipeline**: Choose between OpenAI cloud power or local Ollama privacy
+- 🛠️ **Flexible Architecture**: Cloud AI for power, local AI for privacy
 - 📱 **CLI Interface**: Easy command-line interaction with future web UI planned
 - ⚡ **Pre-loaded Content**: Ships with Philip Fisher's investment wisdom ready to query
 
 ---
 
-## Getting Started
+## 🔧 Setup & Configuration
 
-### Prerequisites
+### 1. Basic Installation
 
-- Python 3.10+
-- `pip` package manager
-- **[Ollama](https://ollama.ai/)** - For local LLM and embedding models
-- **[Qdrant](https://qdrant.tech/)** - Local vector database (auto-started)
+```bash
+# Clone repository
+git clone <repository-url>
+cd niveshak-ai
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Choose Your AI Mode
+
+#### Option A: AI-Powered Analysis (Recommended)
+
+Get intelligent PDF analysis with OpenAI GPT-4:
+
+1. **Get OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. **Configure API Key**: Add to `config/settings.yaml`:
+   ```yaml
+   api_keys:
+     openai_api_key: "your-api-key-here"
+   ```
+   Or set environment variable:
+   ```bash
+   export OPENAI_API_KEY="your-api-key-here"
+   ```
+
+#### Option B: Local Analysis (Privacy-First)
+
+For complete local processing:
+
+1. **Install Ollama**: Download from [ollama.ai](https://ollama.ai/)
+2. **Pull Required Models**:
+   ```bash
+   ollama pull deepseek-r1:7b
+   ollama pull nomic-embed-text
+   ```
+
+### 3. Test Your Setup
+
+```bash
+# Test AI integration
+python test_openai_integration.py
+
+# Test complete workflow
+python test_complete_workflow.py
+```
+
+---
+
+## 📊 Stock Analysis Workflow
+
+### Directory Structure for Annual Reports
+
+Organize your annual reports using the following structure:
+
+```
+data/annual_reports/
+├── ITC/
+│   ├── 2023.pdf
+│   ├── 2024.pdf
+│   └── 2025.pdf
+├── RELIANCE/
+│   ├── 2023.pdf
+│   ├── 2024.pdf
+│   └── 2025.pdf
+└── [OTHER_SYMBOLS]/
+    ├── year.pdf
+    └── ...
+```
+
+### Running AI-Powered Stock Analysis
+
+1. **Prepare Annual Reports**: Place 3 years of annual reports in the appropriate directory structure
+2. **Configure OpenAI API**: Set up your API key (see setup instructions above)
+3. **Run Analysis**: The system will automatically use AI for intelligent data extraction
+4. **Review Report**: Check the AI-generated analysis in the `reports/` folder
+
+#### Example: ITC Analysis with AI
+
+```bash
+# Run ITC analysis with AI extraction
+python fresh_itc_analysis.py
+
+# AI will automatically:
+# - Extract financial data from PDFs
+# - Analyze business fundamentals
+# - Generate comprehensive tables
+# - Provide investment insights
+
+# Report generated as: reports/ITC-2025-07-31.md
+```
+
+### AI Analysis Features
+
+- **🤖 Intelligent PDF Extraction**: AI reads and understands annual report content
+- **📊 Automated Data Population**: Financial tables filled automatically by AI
+- **📈 Multi-Year Trend Analysis**: 3-year CAGR calculations and growth patterns
+- **🔍 Business Intelligence**: AI extracts qualitative business information
+- **💡 Smart Insights**: AI-powered interpretation of financial metrics
+- **🛡️ Fallback Support**: Graceful degradation to basic analysis if AI unavailable
+
+### Generated AI Reports
+
+Each AI analysis generates a comprehensive report including:
+
+- **🏢 Company Profile**: AI-extracted business overview and fundamentals
+- **💰 Financial Metrics**: Automatically populated financial data tables
+- **📊 Ratio Analysis**: AI-calculated and interpreted financial ratios
+- **🤖 AI Insights**: Intelligent analysis of business performance
+- **📈 Trend Analysis**: Multi-year growth patterns and projections
+- **💡 Investment Thesis**: AI-powered investment recommendations
 - ~~OpenAI API key~~ **No longer needed!** - Runs completely offline
 
 ### Installation

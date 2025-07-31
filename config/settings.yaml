@@ -14,7 +14,7 @@ api:
   openai:
     api_key: ${OPENAI_API_KEY}
     max_tokens: 2000
-    model: gpt-3.5-turbo
+    model: gpt-4o
     temperature: 0.1
 app:
   environment: development
@@ -34,6 +34,11 @@ embedding:
 llm:
   fallback_provider: openai
   provider: ollama
+  # PDF Analysis LLM Configuration
+  pdf_analysis:
+    provider: openai # Default to OpenAI for PDF analysis (openai, anthropic, ollama)
+    model: gpt-4o # Will use the model from the selected provider's config
+    temperature: 0.1 # Lower temperature for more consistent extraction
 logging:
   backup_count: 5
   file: logs/niveshak.log
