@@ -14,7 +14,7 @@ api:
   openai:
     api_key: ${OPENAI_API_KEY}
     max_tokens: 2000
-    model: gpt-3.5-turbo
+    model: gpt-4.1-nano
     temperature: 0.1
 app:
   environment: development
@@ -29,11 +29,16 @@ embedding:
   batch_size: 50
   chunk_overlap: 100
   chunk_size: 500
-  model: nomic-embed-text
-  provider: ollama
+  model: text-embedding-3-small
+  provider: openai
 llm:
-  fallback_provider: openai
-  provider: ollama
+  fallback_provider: ollama
+  provider: openai
+  # PDF Analysis LLM Configuration
+  pdf_analysis:
+    provider: openai # Default to OpenAI for PDF analysis (openai, anthropic, ollama)
+    model: gpt-4.1-nano # Will use the model from the selected provider's config
+    temperature: 0.1 # Lower temperature for more consistent extraction
 logging:
   backup_count: 5
   file: logs/niveshak.log

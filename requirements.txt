@@ -1,5 +1,5 @@
 # Core dependencies
-openai>=1.0.0
+openai>=1.5.0
 ollama>=0.2.0
 langchain>=0.1.0
 langchain-openai>=0.1.0
@@ -10,7 +10,7 @@ qdrant-client>=1.7.0
 weaviate-client>=3.25.0
 
 # PDF processing
-pypdf2>=3.0.0
+PyPDF2>=3.0.0
 pdfplumber>=0.9.0
 pymupdf>=1.23.0
 
@@ -40,3 +40,6 @@ mypy>=1.5.0
 
 # Logging
 loguru>=0.7.0
+
+# PDF report generation
+fpdf

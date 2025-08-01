@@ -10,6 +10,13 @@ import os
 import argparse
 from pathlib import Path
 
+# Load environment variables first
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Add src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
