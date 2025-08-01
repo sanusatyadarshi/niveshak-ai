@@ -59,6 +59,10 @@ def analyze_company(company: str, query: str, valuation: str, output: str, confi
             # Extract multi-year financial data
             financial_data = analyzer.extract_multi_year_financial_data(company)
             
+            # Get current stock price for valuation comparison
+            current_price = analyzer.get_current_stock_price(company)
+            financial_data['current_price'] = current_price
+            
             # Generate fundamental analysis report
             report_content = analyzer.generate_fundamental_analysis_report(company, financial_data)
             

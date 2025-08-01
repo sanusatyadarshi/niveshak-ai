@@ -97,7 +97,7 @@ class SymbolStockAnalyzer:
     
     def get_current_stock_price(self, symbol: str) -> float:
         """
-        Ask user for current stock price for DCF analysis
+        Get current stock price from yfinance API
         
         Args:
             symbol: Stock symbol
@@ -105,27 +105,52 @@ class SymbolStockAnalyzer:
         Returns:
             Current stock price
         """
-        print(f"\n📈 Current Market Price Required for {symbol}")
-        print("=" * 40)
+        print(f"\n📈 Fetching current market price for {symbol}...")
         
-        while True:
+        try:
+            # Try NSE first, then BSE
+            for exchange in [".NS", ".BO"]:
+                try:
+                    ticker = f"{symbol}{exchange}"
+                    stock = yf.Ticker(ticker)
+                    
+                    # Get current price
+                    info = stock.info
+                    current_price = info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose')
+                    
+                    if current_price and current_price > 0:
+                        print(f"✅ Current {symbol} price: ₹{current_price:.2f} ({exchange.replace('.', '')} exchange)")
+                        return float(current_price)
+                        
+                except Exception as e:
+                    logger.debug(f"Failed to fetch price from {exchange}: {str(e)}")
+                    continue
+            
+            # If yfinance fails, try to get from historical data
+            print("⚠️  Live price not available, trying historical data...")
             try:
-                price_input = input(f"Enter current market price for {symbol} (₹): ").strip()
-                if not price_input:
-                    print("⚠️  Please enter a valid price")
-                    continue
+                for exchange in [".NS", ".BO"]:
+                    ticker = f"{symbol}{exchange}"
+                    stock = yf.Ticker(ticker)
+                    hist = stock.history(period="5d")
                     
-                current_price = float(price_input.replace('₹', '').replace(',', ''))
-                if current_price <= 0:
-                    print("⚠️  Price must be greater than 0")
-                    continue
-                    
-                print(f"✅ Current {symbol} price: ₹{current_price:.2f}")
-                return current_price
+                    if not hist.empty:
+                        current_price = hist['Close'].iloc[-1]
+                        print(f"✅ Latest available {symbol} price: ₹{current_price:.2f} (from {hist.index[-1].date()})")
+                        return float(current_price)
+            except Exception as e:
+                logger.debug(f"Historical data fetch failed: {str(e)}")
+            
+            # Fallback: use estimated price for analysis
+            print("⚠️  Unable to fetch current price automatically. Using estimated price for analysis.")
+            estimated_price = 100.0  # Default fallback
+            print(f"⚠️  Using estimated price: ₹{estimated_price:.2f}")
+            return estimated_price
                 
-            except ValueError:
-                print("⚠️  Please enter a valid number (e.g., 485.50)")
-                continue
+        except Exception as e:
+            logger.error(f"Error fetching current price for {symbol}: {str(e)}")
+            print("⚠️  Price fetch failed. Using estimated price for analysis.")
+            return 100.0
 
     def validate_symbol(self, symbol: str) -> bool:
         """
@@ -1188,81 +1213,6 @@ class SymbolStockAnalyzer:
 
 ---"""
     
-    def generate_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Generate DCF analysis using the new DCFAnalyzer class
-        
-        Args:
-            symbol: Stock symbol
-            financial_data: Financial data dictionary
-            
-        Returns:
-            DCF analysis results
-        """
-        try:
-            from analysis.valuation import DCFAnalyzer
-            
-            # Initialize DCF analyzer
-            dcf_analyzer = DCFAnalyzer()
-            
-            # Calculate DCF valuation
-            dcf_results = dcf_analyzer.calculate_dcf_valuation(financial_data)
-            
-            print(f"✅ DCF analysis completed for {symbol}")
-            print(f"   💰 Intrinsic Value: ₹{dcf_results.get('intrinsic_value_per_share', 0):.2f}")
-            print(f"   🎯 Recommendation: {dcf_results.get('recommendation', 'HOLD')}")
-            
-            return dcf_results
-            
-        except Exception as e:
-            logger.error(f"DCF analysis failed: {str(e)}")
-            # Fallback to existing DCF calculation
-            return self._fallback_dcf_analysis(symbol, financial_data)
-    
-    def _fallback_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback DCF analysis using existing dcf_calculation module"""
-        try:
-            from analysis.dcf_calculation import dcf_intrinsic_valuation
-            
-            # Get key parameters for DCF
-            fcf = financial_data.get('free_cash_flow', 0) * 10000000  # Convert Cr to actual
-            shares = financial_data.get('shares_outstanding', 0) * 10000000  # Convert Cr to actual
-            debt = financial_data.get('total_debt', 0) * 10000000
-            cash = financial_data.get('cash_and_equivalents', 0) * 10000000
-            
-            # Calculate DCF
-            dcf_result = dcf_intrinsic_valuation(
-                base_fcf=fcf,
-                fcf_growth_rate_5yr=0.10,
-                fcf_growth_rate_10yr=0.05,
-                terminal_growth_rate=0.02,
-                discount_rate=0.12,
-                total_debt=debt,
-                cash_and_equivalents=cash,
-                shares_outstanding=shares
-            )
-            
-            # Format result to match expected structure
-            return {
-                'intrinsic_value_per_share': dcf_result.get('intrinsic_value_per_share', 0),
-                'current_price': financial_data.get('current_price', 0),
-                'recommendation': 'BUY' if dcf_result.get('intrinsic_value_per_share', 0) > financial_data.get('current_price', 0) else 'HOLD',
-                'margin_of_safety': dcf_result.get('margin_of_safety_percent', 0),
-                'enterprise_value': dcf_result.get('enterprise_value', 0),
-                'equity_value': dcf_result.get('equity_value', 0)
-            }
-            
-        except Exception as e:
-            logger.error(f"Fallback DCF analysis failed: {str(e)}")
-            return {
-                'intrinsic_value_per_share': 100.0,
-                'current_price': financial_data.get('current_price', 0),
-                'recommendation': 'HOLD',
-                'margin_of_safety': 0.0,
-                'enterprise_value': 0,
-                'equity_value': 0
-            }
-    
     def _format_dcf_section(self, dcf_results: Dict[str, Any]) -> str:
         """
         Format DCF analysis results into markdown section
@@ -1324,22 +1274,6 @@ class SymbolStockAnalyzer:
     def _get_report_date(self) -> str:
         """Get current date for report filename"""
         return datetime.now().strftime("%Y-%m-%d")
-    
-
-def main():
-    """Main function for command-line usage"""
-    analyzer = SymbolStockAnalyzer()
-    
-    try:
-        report_path = analyzer.analyze_symbol()
-        print(f"\n🎉 Stock analysis completed!")
-        print(f"📋 Full report available at: {report_path}")
-        
-    except KeyboardInterrupt:
-        print("\n\n⏹️  Analysis cancelled by user.")
-    except Exception as e:
-        print(f"\n❌ Analysis failed: {str(e)}")
-        sys.exit(1)
 
     def generate_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -1361,9 +1295,36 @@ def main():
             # Calculate DCF valuation
             dcf_results = dcf_analyzer.calculate_dcf_valuation(financial_data)
             
+            # Get current price and calculate proper recommendation
+            current_price = financial_data.get('current_price', 0)
+            intrinsic_value = dcf_results.get('intrinsic_value_per_share', 0)
+            
+            # Calculate upside potential and update recommendation
+            if current_price > 0 and intrinsic_value > 0:
+                upside_potential = ((intrinsic_value - current_price) / current_price) * 100
+                
+                if upside_potential > 30:
+                    recommendation = "STRONG BUY"
+                elif upside_potential > 15:
+                    recommendation = "BUY"
+                elif upside_potential > -10:
+                    recommendation = "HOLD"
+                else:
+                    recommendation = "AVOID"
+            else:
+                upside_potential = 0.0
+                recommendation = "HOLD"
+            
+            # Update results with proper values
+            dcf_results['current_price'] = current_price
+            dcf_results['upside_potential'] = upside_potential
+            dcf_results['recommendation'] = recommendation
+            
             print(f"✅ DCF analysis completed for {symbol}")
-            print(f"   💰 Intrinsic Value: ₹{dcf_results.get('intrinsic_value_per_share', 0):.2f}")
-            print(f"   🎯 Recommendation: {dcf_results.get('recommendation', 'HOLD')}")
+            print(f"   💰 Intrinsic Value: ₹{intrinsic_value:.2f}")
+            print(f"   📈 Current Price: ₹{current_price:.2f}")
+            print(f"   📊 Upside Potential: {upside_potential:.1f}%")
+            print(f"   🎯 Recommendation: {recommendation}")
             
             return dcf_results
             
@@ -1395,11 +1356,28 @@ def main():
                 shares_outstanding=shares
             )
             
+            # Get current price and calculate upside potential
+            current_price = financial_data.get('current_price', 0)
+            intrinsic_value = dcf_result.get('intrinsic_value_per_share', 0)
+            
+            if current_price > 0 and intrinsic_value > 0:
+                upside_potential = ((intrinsic_value - current_price) / current_price) * 100
+                if upside_potential > 15:
+                    recommendation = "BUY"
+                elif upside_potential > -10:
+                    recommendation = "HOLD"
+                else:
+                    recommendation = "AVOID"
+            else:
+                upside_potential = 0.0
+                recommendation = "HOLD"
+            
             # Format result to match expected structure
             return {
-                'intrinsic_value_per_share': dcf_result.get('intrinsic_value_per_share', 0),
-                'current_price': financial_data.get('current_price', 0),
-                'recommendation': 'BUY' if dcf_result.get('intrinsic_value_per_share', 0) > financial_data.get('current_price', 0) else 'HOLD',
+                'intrinsic_value_per_share': intrinsic_value,
+                'current_price': current_price,
+                'recommendation': recommendation,
+                'upside_potential': upside_potential,
                 'margin_of_safety': dcf_result.get('margin_of_safety_percent', 0),
                 'enterprise_value': dcf_result.get('enterprise_value', 0),
                 'equity_value': dcf_result.get('equity_value', 0)
@@ -1411,72 +1389,27 @@ def main():
                 'intrinsic_value_per_share': 100.0,
                 'current_price': financial_data.get('current_price', 0),
                 'recommendation': 'HOLD',
+                'upside_potential': 0.0,
                 'margin_of_safety': 0.0,
                 'enterprise_value': 0,
                 'equity_value': 0
             }
+
+
+def main():
+    """Main function for command-line usage"""
+    analyzer = SymbolStockAnalyzer()
     
-    def _format_dcf_section(self, dcf_results: Dict[str, Any]) -> str:
-        """
-        Format DCF analysis results into markdown section
+    try:
+        report_path = analyzer.analyze_symbol()
+        print(f"\n🎉 Stock analysis completed!")
+        print(f"📋 Full report available at: {report_path}")
         
-        Args:
-            dcf_results: DCF analysis results
-            
-        Returns:
-            Formatted markdown section
-        """
-        intrinsic_value = dcf_results.get('intrinsic_value_per_share', 0)
-        current_price = dcf_results.get('current_price', 0)
-        recommendation = dcf_results.get('recommendation', 'HOLD')
-        margin_of_safety = dcf_results.get('margin_of_safety', 0)
-        upside_potential = dcf_results.get('upside_potential', margin_of_safety)
-        
-        # Determine status emoji and color
-        if 'BUY' in recommendation:
-            status_emoji = "✅"
-            action_text = "BUY"
-        elif 'AVOID' in recommendation:
-            status_emoji = "❌"
-            action_text = "AVOID"
-        else:
-            status_emoji = "⚖️"
-            action_text = "HOLD"
-        
-        return f"""
-
-## 💰 DCF Valuation Analysis
-
-### Model Inputs
-- **Initial FCF:** ₹{dcf_results.get('initial_fcf', 0):,.0f} Cr
-- **Growth Rates:** {', '.join([f'{r:.0%}' for r in dcf_results.get('growth_rates', [0.15, 0.12, 0.10, 0.08, 0.05])])} (Years 1-5)
-- **Terminal Growth:** {dcf_results.get('terminal_growth_rate', 0.02):.1%}
-- **Discount Rate:** {dcf_results.get('discount_rate', 0.12):.1%}
-- **Shares Outstanding:** {dcf_results.get('shares_outstanding', 0):,.0f} Cr
-
-### Valuation Results
-- **Enterprise Value:** ₹{dcf_results.get('enterprise_value', 0):,.0f} Cr
-- **Equity Value:** ₹{dcf_results.get('equity_value', 0):,.0f} Cr
-- **Intrinsic Value per Share:** ₹{intrinsic_value:.2f}
-- **Target Buy Price:** ₹{dcf_results.get('target_buy_price', intrinsic_value * 0.7):.2f}
-
-## 🎯 Investment Decision
-
-**Status:** {recommendation}
-**Recommendation:** {action_text}
-**Confidence:** {dcf_results.get('confidence', 'MEDIUM')}
-**Upside Potential:** {upside_potential:.1f}%
-
-{status_emoji} **Action:** {action_text} at current price levels
-
----
-*This analysis is for informational purposes only. Please conduct your own research before making investment decisions.*
-
-"""
-    
-    def _get_report_date(self) -> str:
-        """Get current date for report filename"""
-        return datetime.now().strftime("%Y-%m-%d")
+    except KeyboardInterrupt:
+        print("\n\n⏹️  Analysis cancelled by user.")
+    except Exception as e:
+        print(f"\n❌ Analysis failed: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
