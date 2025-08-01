@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Tuple, Optional
 import yaml
 import re
+import requests
 
 # LLM Provider imports
 try:
@@ -225,3 +226,106 @@ class LLMPDFAnalyzer:
         
         print("✅ Fallback multi-year financial data prepared")
         return multi_year_data
+    
+    def analyze_with_llm(self, prompt: str) -> str:
+        """
+        Analyze financial data or documents using the configured LLM provider
+        
+        Args:
+            prompt: Analysis prompt for the LLM
+            
+        Returns:
+            LLM analysis response
+        """
+        try:
+            if self.provider == 'openai' and OPENAI_AVAILABLE:
+                return self._analyze_with_openai(prompt)
+            elif self.provider == 'anthropic' and ANTHROPIC_AVAILABLE:
+                return self._analyze_with_anthropic(prompt)
+            elif self.provider == 'ollama' and OLLAMA_AVAILABLE:
+                return self._analyze_with_ollama(prompt)
+            else:
+                return self._get_fallback_analysis_response(prompt)
+                
+        except Exception as e:
+            print(f"⚠️ LLM analysis failed: {str(e)}")
+            return self._get_fallback_analysis_response(prompt)
+
+    def _analyze_with_openai(self, prompt: str) -> str:
+        """Analyze using OpenAI API"""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.config['api']['openai']['model'],
+                messages=[
+                    {"role": "system", "content": "You are a financial analyst specializing in comprehensive fundamental analysis of Indian companies. Provide detailed, specific insights."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=self.config['api']['openai']['max_tokens'],
+                temperature=self.config['api']['openai']['temperature']
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            raise Exception(f"OpenAI analysis failed: {str(e)}")
+
+    def _analyze_with_anthropic(self, prompt: str) -> str:
+        """Analyze using Anthropic Claude API"""
+        try:
+            response = self.anthropic_client.messages.create(
+                model=self.config['api']['anthropic']['model'],
+                max_tokens=2000,
+                messages=[
+                    {"role": "user", "content": f"As a financial analyst, {prompt}"}
+                ]
+            )
+            return response.content[0].text
+        except Exception as e:
+            raise Exception(f"Anthropic analysis failed: {str(e)}")
+
+    def _analyze_with_ollama(self, prompt: str) -> str:
+        """Analyze using Ollama local model"""
+        try:
+            response = requests.post(
+                f"{self.config['api']['ollama']['base_url']}/api/generate",
+                json={
+                    "model": self.config['api']['ollama']['model'],
+                    "prompt": f"As a financial analyst specializing in Indian markets: {prompt}",
+                    "stream": False,
+                    "options": {
+                        "temperature": self.config['api']['ollama']['temperature'],
+                        "num_predict": self.config['api']['ollama']['max_tokens']
+                    }
+                }
+            )
+            return response.json()['response']
+        except Exception as e:
+            raise Exception(f"Ollama analysis failed: {str(e)}")
+
+    def _get_fallback_analysis_response(self, prompt: str) -> str:
+        """Provide fallback analysis when LLM is not available"""
+        return f"""
+## Comprehensive Financial Analysis
+
+Based on the available data, here are the key insights:
+
+### Company Operations
+- The company operates in a competitive industry with established market presence
+- Business model focuses on sustainable growth and market expansion
+- Strong management team with industry experience
+
+### Financial Performance
+- Revenue growth shows consistent trends over the analysis period
+- Profitability margins indicate operational efficiency
+- Cash flow generation supports business sustainability
+
+### Investment Perspective
+- Current valuation requires careful consideration of market conditions
+- Long-term prospects depend on industry dynamics and execution capability
+- Risk factors include market volatility and competitive pressures
+
+### Recommendation Framework
+- Detailed financial ratio analysis recommended for investment decisions
+- Consider comparative analysis with industry peers
+- Monitor quarterly performance for trend validation
+
+*Note: This is a template analysis. For detailed insights, please ensure LLM provider is properly configured.*
+"""
