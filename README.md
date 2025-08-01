@@ -54,7 +54,7 @@ pip install -r requirements.txt
 **NiveshakAI is optimized for OpenAI GPT-4.1-nano** for cost-effective, high-performance analysis:
 
 1. **Get OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys)
-2. **Configure API Key**: 
+2. **Configure API Key**:
    ```bash
    cp .env.template .env
    # Edit .env file and add your key:
@@ -74,6 +74,7 @@ For offline capability when OpenAI is unavailable:
 ### 3. Set Up Vector Database
 
 **Qdrant** (recommended for OpenAI embeddings):
+
 ```bash
 # Using Docker
 docker run -d -p 6333:6333 qdrant/qdrant
@@ -127,15 +128,15 @@ data/annual_reports/
 
 ```bash
 # Run ITC analysis with AI extraction
-python fresh_itc_analysis.py
+python main.py analyze company --company ITC --query "Complete fundamental analysis"
 
 # AI will automatically:
-# - Extract financial data from PDFs
+# - Extract financial data from annual report PDFs
 # - Analyze business fundamentals
 # - Generate comprehensive tables
 # - Provide investment insights
 
-# Report generated as: reports/ITC-2025-07-31.md
+# Report generated in: reports/ folder
 ```
 
 ### OpenAI-Powered Analysis Features
@@ -270,13 +271,13 @@ NiveshakAI comes with Philip Fisher's "Common Stocks and Uncommon Profits" alrea
 
 ```bash
 # Ask about Philip Fisher's investment principles
-python -m src.cli.analyze ask --query "What are Philip Fisher's 15 points for stock analysis?"
+python main.py analyze ask --query "What are Philip Fisher's 15 points for stock analysis?"
 
 # Learn about growth investing
-python -m src.cli.analyze ask --query "How does Fisher identify quality growth companies?"
+python main.py analyze ask --query "How does Fisher identify quality growth companies?"
 
 # Understand the scuttlebutt method
-python -m src.cli.analyze ask --query "What is Fisher's scuttlebutt method for research?"
+python main.py analyze ask --query "What is Fisher's scuttlebutt method for research?"
 ```
 
 ### 2. Add Your Own Investment Books
@@ -285,10 +286,10 @@ Place your investing books (PDF format) in `data/books/` and ingest them:
 
 ```bash
 # Ingest a single book
-python -m src.cli.ingest_books --file "data/books/your-investment-book.pdf"
+python main.py ingest books --file "data/books/your-investment-book.pdf"
 
 # Ingest all books in the directory
-python -m src.cli.ingest_books --directory "data/books/"
+python main.py ingest books --directory "data/books/"
 ```
 
 **Supported book examples**:
@@ -302,10 +303,10 @@ python -m src.cli.ingest_books --directory "data/books/"
 
 ```bash
 # Analyze a specific company
-python -m src.cli.analyze company --symbol AAPL --query "Is Apple a good long-term investment?"
+python main.py analyze company --company AAPL --query "Is Apple a good long-term investment?"
 
 # Compare multiple companies
-python -m src.cli.analyze compare --symbols AAPL,MSFT,GOOGL
+python main.py analyze compare --companies AAPL,MSFT,GOOGL
 ```
 
 ### 4. Demo Analysis
@@ -546,7 +547,7 @@ du -sh data/
 
 # 3. Add your new investment books
 cp ~/Downloads/new-book.pdf data/books/
-python -m src.cli.ingest_books --file "data/books/new-book.pdf"
+python main.py ingest books --file "data/books/new-book.pdf"
 
 # 4. Verify everything works
 python test_rag.py
