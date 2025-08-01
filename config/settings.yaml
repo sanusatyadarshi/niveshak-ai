@@ -25,7 +25,7 @@ cache:
   max_size_mb: 1000
   ttl_hours: 24
 embedding:
-  base_url: http://localhost:11434
+  base_url: https://api.openai.com/v1
   batch_size: 50
   chunk_overlap: 100
   chunk_size: 500
@@ -36,8 +36,8 @@ llm:
   provider: openai
   # PDF Analysis LLM Configuration
   pdf_analysis:
-    provider: openai # Default to OpenAI for PDF analysis (openai, anthropic, ollama)
-    model: gpt-4.1-nano # Will use the model from the selected provider's config
+    provider: openai # Use OpenAI for PDF analysis (better performance)
+    model: gpt-4.1-nano # Use GPT-4o-nano for cost efficiency
     temperature: 0.1 # Lower temperature for more consistent extraction
 logging:
   backup_count: 5
@@ -63,7 +63,7 @@ vector_db:
     collection_name: niveshak_knowledge
     host: localhost
     port: 6333
-    vector_size: 768
+    vector_size: 1536
     timeout: 300
   weaviate:
     class_name: NiveshakDocument

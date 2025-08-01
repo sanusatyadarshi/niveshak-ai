@@ -11,26 +11,28 @@
 **NiveshakAI** is a personal AI agent designed to help you become a smarter, data-driven fundamental investor.  
 It reads and understands your chosen investing books, analyzes company annual reports, and provides buy/sell recommendations along with detailed explanations — all shaped by your personalized investor philosophy.
 
-**🚀 Now featuring AI-powered PDF analysis!** NiveshakAI offers multiple analysis modes:
+**🚀 Now featuring advanced OpenAI-powered analysis!** NiveshakAI leverages cutting-edge AI for intelligent financial analysis:
 
-- **🤖 AI-Powered Analysis**: OpenAI GPT-4 for intelligent PDF extraction and analysis (requires API key)
-- **🏠 Local Analysis**: DeepSeek R1 7B via Ollama (no API costs!)
+- **🤖 OpenAI GPT-4.1-nano**: Cost-efficient, high-performance model for intelligent PDF extraction and analysis
+- **🧠 OpenAI Embeddings**: text-embedding-3-small (1536-dim) for superior knowledge retrieval
+- **🏠 Local Fallback**: DeepSeek R1 7B via Ollama for offline operation when needed
 - **📊 Multi-Year Trend Analysis**: Comprehensive 3-year financial data extraction
-- **🔍 Automated Data Extraction**: Smart parsing of annual reports with AI
+- **🔍 RAG-Powered Queries**: Retrieval-Augmented Generation with embedded investment knowledge
 
-Choose between cloud AI power or complete local privacy based on your preferences.
+Optimized for performance, accuracy, and cost-effectiveness using OpenAI's latest models.
 
 ---
 
 ## Features
 
-- 🤖 **AI-Powered PDF Analysis**: OpenAI GPT-4 intelligently extracts financial data from annual reports
-- 📚 **Local Knowledge Ingestion**: Process investing books (PDF, EPUB) with local embeddings
+- 🤖 **OpenAI-Powered Analysis**: GPT-4.1-nano intelligently extracts financial data from annual reports
+- 🧠 **Advanced RAG System**: OpenAI text-embedding-3-small (1536-dim) for superior knowledge retrieval
+- 📚 **Investment Knowledge Base**: Process investing books with OpenAI embeddings for semantic search
 - 📄 **Smart Annual Report Analysis**: AI-powered parsing of complex financial documents
 - 🧠 **Personalized AI**: Embed your investor persona and risk profile for tailored recommendations
 - 📊 **Comprehensive Valuations**: DCF, P/E ratio, and AI-enhanced fundamental analysis
-- 🤖 **Dual AI Pipeline**: Choose between OpenAI cloud power or local Ollama privacy
-- 🛠️ **Flexible Architecture**: Cloud AI for power, local AI for privacy
+- 🔄 **Hybrid Architecture**: OpenAI primary with local Ollama fallback for reliability
+- 🛠️ **Flexible Configuration**: Optimized for performance and cost-effectiveness
 - 📱 **CLI Interface**: Easy command-line interaction with future web UI planned
 - ⚡ **Pre-loaded Content**: Ships with Philip Fisher's investment wisdom ready to query
 
@@ -49,42 +51,48 @@ cd niveshak-ai
 pip install -r requirements.txt
 ```
 
-### 2. Choose Your AI Mode
+### 2. Configure OpenAI API (Primary)
 
-#### Option A: AI-Powered Analysis (Recommended)
-
-Get intelligent PDF analysis with OpenAI GPT-4:
+**NiveshakAI is optimized for OpenAI GPT-4.1-nano** for cost-effective, high-performance analysis:
 
 1. **Get OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys)
-2. **Configure API Key**: Add to `config/settings.yaml`:
-   ```yaml
-   api_keys:
-     openai_api_key: "your-api-key-here"
-   ```
-   Or set environment variable:
+2. **Configure API Key**: 
    ```bash
-   export OPENAI_API_KEY="your-api-key-here"
+   cp .env.template .env
+   # Edit .env file and add your key:
+   # OPENAI_API_KEY=your-api-key-here
    ```
 
-#### Option B: Local Analysis (Privacy-First)
+#### Optional: Local Fallback Setup
 
-For complete local processing:
+For offline capability when OpenAI is unavailable:
 
 1. **Install Ollama**: Download from [ollama.ai](https://ollama.ai/)
-2. **Pull Required Models**:
+2. **Pull Fallback Model**:
    ```bash
    ollama pull deepseek-r1:7b
-   ollama pull nomic-embed-text
    ```
 
-### 3. Test Your Setup
+### 3. Set Up Vector Database
+
+**Qdrant** (recommended for OpenAI embeddings):
+```bash
+# Using Docker
+docker run -d -p 6333:6333 qdrant/qdrant
+
+# Or using Homebrew (macOS)
+brew install qdrant/tap/qdrant
+qdrant
+```
+
+### 4. Test Your Setup
 
 ```bash
-# Test AI integration
-python test_openai_integration.py
+# Test OpenAI integration
+python main.py analyze ask --query "What are Philip Fisher's 15 points?"
 
-# Test complete workflow
-python test_complete_workflow.py
+# Test company analysis
+python main.py analyze company --company ITC --query "Is ITC a good investment?"
 ```
 
 ---
@@ -132,14 +140,15 @@ python fresh_itc_analysis.py
 # Report generated as: reports/ITC-2025-07-31.md
 ```
 
-### AI Analysis Features
+### OpenAI-Powered Analysis Features
 
-- **🤖 Intelligent PDF Extraction**: AI reads and understands annual report content
+- **🤖 Intelligent PDF Extraction**: GPT-4.1-nano reads and understands annual report content
 - **📊 Automated Data Population**: Financial tables filled automatically by AI
 - **📈 Multi-Year Trend Analysis**: 3-year CAGR calculations and growth patterns
 - **🔍 Business Intelligence**: AI extracts qualitative business information
-- **💡 Smart Insights**: AI-powered interpretation of financial metrics
-- **🛡️ Fallback Support**: Graceful degradation to basic analysis if AI unavailable
+- **💡 Smart Insights**: OpenAI-powered interpretation of financial metrics
+- **🧠 RAG Knowledge Retrieval**: text-embedding-3-small for precise knowledge matching
+- **🛡️ Reliable Fallback**: Graceful degradation to local Ollama if OpenAI unavailable
 
 ### Generated AI Reports
 

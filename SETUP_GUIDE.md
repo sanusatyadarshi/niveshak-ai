@@ -1,10 +1,11 @@
-# 🚀 Simplified Setup Guide - Niveshak AI
+# 🚀 NiveshakAI Setup Guide - OpenAI Powered
 
 ## Prerequisites
 
 - Python 3.8+ installed
-- macOS (you're already on macOS)
+- macOS
 - Terminal access
+- OpenAI API key (recommended for best performance)
 
 ---
 
@@ -30,43 +31,45 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Step 4: Set Up API Keys (Choose One Option)
+## Step 4: Configure OpenAI API (Primary)
 
-### Option A: OpenAI API (Recommended for Best Results)
+### OpenAI API Setup (Recommended)
+
+**NiveshakAI is optimized for OpenAI GPT-4.1-nano** for cost-effective, high-performance analysis:
 
 1. Get OpenAI API key from: https://platform.openai.com/api-keys
-2. Create `.env` file:
+2. Copy and configure environment file:
 
 ```bash
-echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
+cp .env.template .env
+# Edit .env file with your API key:
+# OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### Option B: Local AI (Free, but requires setup)
+### Optional: Local AI Fallback
+
+For offline capability (optional):
 
 1. Install Ollama: https://ollama.ai/download
-2. Pull the models:
+2. Pull the fallback model:
 
 ```bash
 ollama pull deepseek-r1:7b
-ollama pull nomic-embed-text
 ```
 
-## Step 5: Set Up Vector Database (Choose One)
+## Step 5: Set Up Vector Database
 
-### Option A: Qdrant (Recommended)
+### Qdrant (Recommended for OpenAI Embeddings)
+
+**Qdrant is optimized for OpenAI's 1536-dimensional embeddings:**
 
 ```bash
-# Install Qdrant
+# Using Docker (recommended)
+docker run -d -p 6333:6333 qdrant/qdrant
+
+# Or using Homebrew (macOS)
 brew install qdrant/tap/qdrant
-# Start Qdrant
 qdrant
-```
-
-### Option B: Weaviate (Alternative)
-
-```bash
-# Using Docker
-docker run -d -p 8080:8080 semitechnologies/weaviate:latest
 ```
 
 ## Step 6: Create Data Directories
@@ -87,16 +90,22 @@ mkdir -p logs
 
 ## 🎯 Quick Test
 
-### Test 1: Basic Setup
+### Test 1: OpenAI Integration
 
 ```bash
-python main.py --help
+python main.py analyze ask --query "What are Philip Fisher's 15 points?"
 ```
 
 ### Test 2: Company Analysis
 
 ```bash
 python main.py analyze company --company ITC --query "Complete fundamental analysis"
+```
+
+### Test 3: Knowledge Retrieval
+
+```bash
+python main.py analyze ask --query "How does Fisher identify growth companies?"
 ```
 
 ### Test 3: Check Generated Report

@@ -134,7 +134,7 @@ def handle_ingest_command(args):
     """Handle ingestion commands."""
     
     if args.ingest_type == 'books':
-        from src.cli.ingest_books import main as books_main
+        from src.cli.ingest_books import ingest_books as books_main
         
         # Convert args to sys.argv format for click
         sys.argv = ['ingest_books']
@@ -150,7 +150,7 @@ def handle_ingest_command(args):
         books_main()
         
     elif args.ingest_type == 'reports':
-        from src.cli.ingest_reports import main as reports_main
+        from src.cli.ingest_reports import ingest_reports as reports_main
         
         # Convert args to sys.argv format for click
         sys.argv = ['ingest_reports']

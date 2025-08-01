@@ -166,8 +166,17 @@ class QdrantVectorStore(VectorStore):
         self.collection_name = collection_name
         self.vector_size = vector_size
         
-        # Initialize Qdrant client
-        self.client = QdrantClient(host=host, port=port)
+        # Try to connect to remote Qdrant first, fallback to in-memory
+        try:
+            self.client = QdrantClient(host=host, port=port)
+            # Test connection
+            self.client.get_collections()
+            logger.info(f"Connected to Qdrant at {host}:{port}")
+        except Exception as e:
+            logger.warning(f"Could not connect to Qdrant server at {host}:{port}: {e}")
+            logger.info("Falling back to in-memory Qdrant instance")
+            # Use in-memory Qdrant instance
+            self.client = QdrantClient(":memory:")
         
         # Create collection if it doesn't exist
         self._ensure_collection_exists()

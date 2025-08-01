@@ -101,13 +101,16 @@ src/
 
 ## 📊 **Technical Stack**
 
-### **AI & ML**
+### **Technical Stack**
 
-- **Primary Analysis**: OpenAI GPT-4 API for PDF analysis and financial data extraction
-- **Local LLM**: DeepSeek R1 7B via Ollama (for knowledge queries)
-- **Embeddings**: Nomic-embed-text (768 dimensions)
-- **Vector DB**: Qdrant (localhost:6333)
-- **Knowledge Base**: Philip Fisher's "Common Stocks and Uncommon Profits" (913 chunks)
+### **AI & ML (OpenAI-Powered)**
+
+- **Primary LLM**: OpenAI GPT-4.1-nano (cost-efficient, high-performance model)
+- **Embeddings**: OpenAI text-embedding-3-small (1536 dimensions)
+- **Vector DB**: Qdrant (localhost:6333) optimized for 1536-dim vectors
+- **Fallback LLM**: DeepSeek R1 7B via Ollama (offline capability)
+- **Knowledge Base**: Philip Fisher's "Common Stocks and Uncommon Profits" with OpenAI embeddings
+- **RAG System**: Retrieval-Augmented Generation with OpenAI-powered semantic search
 
 ### **Data Processing**
 
@@ -117,9 +120,11 @@ src/
 
 ### **Configuration**
 
-- **Settings**: `config/settings.yaml` - Ollama integration
+- **Settings**: `config/settings.yaml` - OpenAI GPT-4.1-nano + text-embedding-3-small
+- **Environment**: `.env` - OpenAI API key configuration
 - **Templates**: `data/templates/dcf-calculation.md` - DCF report format
 - **Dependencies**: All in `requirements.txt`
+- **Vector Dimensions**: 1536 (optimized for OpenAI embeddings)
 
 ---
 
