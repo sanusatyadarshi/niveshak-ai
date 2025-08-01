@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import yaml
 import requests
+import pdfplumber
+import re
 
 # LLM Provider imports
 try:
@@ -61,6 +63,9 @@ class LLMPDFAnalyzer:
     
     def __init__(self, config_path: str = "config/settings.yaml"):
         """Initialize with configurable LLM provider"""
+        # Force load environment variables
+        self._load_environment_variables()
+        
         self.config_path = config_path
         self.config = self._load_config()
         
@@ -75,11 +80,48 @@ class LLMPDFAnalyzer:
         
         print(f"🤖 LLM PDF Analyzer initialized with {self.provider.upper()} provider")
     
+    def _load_environment_variables(self):
+        """Force load environment variables from .env file"""
+        try:
+            from dotenv import load_dotenv
+            
+            # Try multiple possible locations for .env file
+            possible_paths = [
+                Path(".env"),  # Current working directory
+                Path(__file__).parent.parent.parent / ".env",  # Project root
+                Path("/app/.env"),  # Docker container path
+            ]
+            
+            for env_path in possible_paths:
+                if env_path.exists():
+                    print(f"🔍 Loading environment from: {env_path}")
+                    load_dotenv(env_path, override=True)
+                    return
+            
+            print("⚠️  No .env file found in expected locations")
+        except ImportError:
+            print("⚠️  python-dotenv not available, relying on system environment variables")
+    
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from YAML file"""
+        """Load configuration from YAML file and substitute environment variables"""
         try:
             with open(self.config_path, 'r') as f:
-                return yaml.safe_load(f)
+                config_content = f.read()
+            
+            # Substitute environment variables
+            import os
+            import re
+            
+            def replace_env_vars(match):
+                var_name = match.group(1)
+                return os.getenv(var_name, match.group(0))
+            
+            # Replace ${VAR_NAME} with actual environment variable values
+            config_content = re.sub(r'\$\{([^}]+)\}', replace_env_vars, config_content)
+            
+            # Parse the YAML after substitution
+            import yaml
+            return yaml.safe_load(config_content)
         except Exception as e:
             print(f"⚠️  Could not load config from {self.config_path}: {e}")
             return {}
@@ -100,17 +142,29 @@ class LLMPDFAnalyzer:
         if not OPENAI_AVAILABLE:
             raise ImportError("OpenAI package not available. Install with: pip install openai")
         
-        api_config = self.config.get('api', {}).get('openai', {})
-        api_key = api_config.get('api_key')
+        # BYPASS CONFIG FILE - Get API key directly from environment
+        api_key = os.getenv('OPENAI_API_KEY')
+        
+        # Force load .env if API key not found
+        if not api_key:
+            try:
+                from dotenv import load_dotenv
+                load_dotenv("/app/.env", override=True)
+                load_dotenv(".env", override=True)
+                api_key = os.getenv('OPENAI_API_KEY')
+            except:
+                pass
+        
+        print(f"🔍 Debug - Final API key: {api_key[:15]}..." if api_key else "🔍 Debug - API key: NOT_FOUND")
         
         if not api_key:
-            api_key = os.getenv('OPENAI_API_KEY')
+            raise ValueError("OpenAI API key not found in environment variables")
         
-        if not api_key:
-            raise ValueError("OpenAI API key not found in config or environment")
+        if api_key.startswith('${'):
+            raise ValueError(f"API key is template variable: {api_key}")
         
         self.client = openai.OpenAI(api_key=api_key)
-        self.model = api_config.get('model', self.model)
+        self.model = "gpt-4o"
     
     def _initialize_anthropic(self):
         """Initialize Anthropic client"""
@@ -150,80 +204,240 @@ class LLMPDFAnalyzer:
         """
         print(f"📊 Extracting Multi-Year Financial Data for {symbol} using {self.provider.upper()}")
         
-        # Return fallback data for now - can be enhanced later
-        return self._get_fallback_multi_year_data(symbol)
+        try:
+            # Find available annual reports
+            symbol_dir = Path(f"data/annual_reports/{symbol}")
+            if not symbol_dir.exists():
+                raise FileNotFoundError(f"No annual reports directory found for {symbol}. Please upload annual reports first.")
+            
+            # Get PDF files sorted by year (newest first)
+            pdf_files = list(symbol_dir.glob("*.pdf"))
+            if not pdf_files:
+                raise FileNotFoundError(f"No PDF files found for {symbol}. Please upload annual reports first.")
+            
+            sorted_pdfs = sorted(pdf_files, key=lambda x: int(x.stem), reverse=True)[:3]
+            print(f"📁 Found {len(sorted_pdfs)} annual reports: {[f.name for f in sorted_pdfs]}")
+            
+            # Extract financial data from PDFs
+            financial_texts = []
+            for pdf_file in sorted_pdfs:
+                print(f"📄 Processing {pdf_file.name}...")
+                extracted_text = self._extract_financial_text_from_pdf(str(pdf_file))
+                if extracted_text:
+                    financial_texts.append({
+                        'year': pdf_file.stem,
+                        'text': extracted_text
+                    })
+            
+            if not financial_texts:
+                raise ValueError("Could not extract text from any PDFs. Please check if the PDF files are valid.")
+            
+            # Use LLM to analyze extracted financial data
+            print("🤖 Analyzing financial data with AI...")
+            analysis_result = self._analyze_financial_data_with_llm(symbol, financial_texts)
+            
+            if analysis_result and analysis_result.get('data_quality') == 'AI_EXTRACTED':
+                print("✅ AI-powered financial data extraction completed")
+                return analysis_result
+            else:
+                raise RuntimeError("AI analysis failed to produce valid results. Please check API configuration.")
+                
+        except Exception as e:
+            print(f"❌ Analysis failed: {e}")
+            raise e  # Re-raise the exception instead of using fallback
     
-    def _get_fallback_multi_year_data(self, symbol: str) -> Dict[str, Any]:
-        """Fallback multi-year data when extraction fails"""
+    def _extract_financial_text_from_pdf(self, pdf_path: str) -> str:
+        """Extract relevant financial text from PDF"""
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                full_text = ""
+                for page in pdf.pages:
+                    page_text = page.extract_text() or ""
+                    full_text += page_text + "\n"
+                
+                # Extract key financial sections
+                financial_sections = []
+                patterns = [
+                    r"profit.*loss|income.*statement|statement.*income",
+                    r"balance.*sheet|financial.*position", 
+                    r"cash.*flow|statement.*cash",
+                    r"financial.*highlights|key.*metrics",
+                    r"ratio.*analysis|financial.*ratios"
+                ]
+                
+                for pattern in patterns:
+                    matches = re.finditer(pattern, full_text, re.IGNORECASE | re.DOTALL)
+                    for match in matches:
+                        # Extract context around the match (500 chars before and after)
+                        start = max(0, match.start() - 500)
+                        end = min(len(full_text), match.end() + 1500)
+                        section_text = full_text[start:end]
+                        financial_sections.append(section_text)
+                
+                # If no specific sections found, return first 5000 characters
+                if not financial_sections:
+                    return full_text[:5000]
+                
+                return "\n\n".join(financial_sections[:3])  # Return top 3 sections
+                
+        except Exception as e:
+            print(f"❌ Error extracting text from {pdf_path}: {e}")
+            return ""
+    
+    def _analyze_financial_data_with_llm(self, symbol: str, financial_texts: List[Dict]) -> Optional[Dict[str, Any]]:
+        """Use LLM to analyze extracted financial data"""
+        try:
+            # Prepare prompt for financial analysis
+            prompt = self._create_financial_analysis_prompt(symbol, financial_texts)
+            
+            # Get LLM response based on provider
+            if self.provider == 'openai':
+                response = self._get_openai_analysis(prompt)
+            elif self.provider == 'anthropic':
+                response = self._get_anthropic_analysis(prompt)
+            elif self.provider == 'ollama':
+                response = self._get_ollama_analysis(prompt)
+            else:
+                return None
+            
+            # Parse and structure the response
+            return self._parse_llm_response(response, symbol)
+            
+        except Exception as e:
+            print(f"❌ Error in LLM analysis: {e}")
+            return None
+    
+    def _create_financial_analysis_prompt(self, symbol: str, financial_texts: List[Dict]) -> str:
+        """Create prompt for LLM financial analysis"""
+        prompt = f"""
+Analyze the following financial data for {symbol} and extract key metrics:
+
+"""
+        for text_data in financial_texts:
+            prompt += f"\n--- Year {text_data['year']} ---\n"
+            prompt += text_data['text'][:2000]  # Limit text length
+            prompt += "\n"
         
-        # Enhanced realistic data for ITC based on actual financial performance
-        if symbol.upper() == 'ITC':
-            multi_year_data = {
-                'company_name': 'ITC Limited',
-                'symbol': symbol,
-                'latest_year': '2025',
-                
-                # Revenue trend (in Crores) - Based on ITC's actual performance
-                'revenue': 68500,  # Latest year
-                'revenue_growth_3yr': 4.6,  # 3-year CAGR
-                
-                # Profitability
-                'net_profit': 17200,
-                'profit_margin': 25.1,
-                'profit_growth_3yr': 6.7,
-                
-                # Cash flows
-                'free_cash_flow': 15800,  # Strong FCF generator
-                'operating_cash_flow': 18500,
-                'fcf_growth_3yr': 7.0,
-                
-                # Balance sheet strength
-                'total_assets': 85000,
-                'shareholders_equity': 58000,
-                'total_debt': 1200,  # Very low debt
-                'cash_and_equivalents': 8500,  # Cash rich
-                'shares_outstanding': 1240,  # 12.40 billion shares
-                
-                # Key financial ratios
-                'roe': 28.5,
-                'roce': 32.1,
-                'roa': 20.2,
-                'debt_to_equity': 0.05,
-                'current_ratio': 2.8,
-                'quick_ratio': 2.1,
-                'asset_turnover': 1.4,
-                
-                # Per share metrics
-                'book_value_per_share': 14.2,
-                'eps': 13.9,
-                
-                # Data quality
-                'data_source': 'ENHANCED_FALLBACK',
-                'extraction_method': f'{self.provider.upper()}_LLM_READY',
-                'analysis_quality': 'HIGH'
+        prompt += f"""
+
+Please extract and calculate the following financial metrics for {symbol}:
+
+1. Company Information:
+   - Business description
+   - Industry sector
+   - Main products/services
+
+2. Financial Performance (latest 3 years):
+   - Revenue growth rate
+   - Net profit margin
+   - Return on Equity (ROE)
+   - Return on Assets (ROA) 
+   - Debt to Equity ratio
+   - Current ratio
+   - Quick ratio
+
+3. Key Financial Numbers:
+   - Latest revenue
+   - Latest net profit
+   - Total assets
+   - Shareholders equity
+   - Total debt
+   - Cash and equivalents
+   - Shares outstanding
+   - Book value per share
+   - Earnings per share (EPS)
+
+4. Cash Flow Analysis:
+   - Operating cash flow
+   - Free cash flow
+   - Cash flow growth rate
+
+Provide the response in JSON format with numeric values where applicable.
+"""
+        return prompt
+    
+    def _get_openai_analysis(self, prompt: str) -> str:
+        """Get analysis from OpenAI"""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": "You are a financial analyst expert at extracting data from annual reports."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=self.temperature,
+            max_tokens=2000
+        )
+        return response.choices[0].message.content
+    
+    def _get_anthropic_analysis(self, prompt: str) -> str:
+        """Get analysis from Anthropic Claude"""
+        response = self.anthropic_client.messages.create(
+            model=self.model,
+            max_tokens=2000,
+            temperature=self.temperature,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.content[0].text
+    
+    def _get_ollama_analysis(self, prompt: str) -> str:
+        """Get analysis from Ollama"""
+        response = requests.post(
+            f"{self.ollama_base_url}/api/generate",
+            json={
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": self.temperature
+                }
             }
-        else:
-            # Generic template for other companies
-            multi_year_data = {
-                'company_name': f'{symbol} Limited',
-                'symbol': symbol,
-                'latest_year': '2025',
-                'revenue': 10000,
-                'net_profit': 1500,
-                'free_cash_flow': 1200,
-                'total_debt': 2000,
-                'cash_and_equivalents': 1000,
-                'shares_outstanding': 100,
-                'roe': 15.0,
-                'roce': 18.0,
-                'debt_to_equity': 0.3,
-                'profit_margin': 15.0,
-                'data_source': 'FALLBACK_DATA',
-                'extraction_method': f'{self.provider.upper()}_LLM_READY'
-            }
-        
-        print("✅ Fallback multi-year financial data prepared")
-        return multi_year_data
+        )
+        return response.json().get('response', '')
+    
+    def _parse_llm_response(self, response: str, symbol: str) -> Dict[str, Any]:
+        """Parse LLM response and structure financial data"""
+        try:
+            # Try to extract JSON from the response
+            import json
+            json_start = response.find('{')
+            json_end = response.rfind('}') + 1
+            
+            if json_start != -1 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                parsed_data = json.loads(json_str)
+                
+                # Structure the data for the analyzer
+                return {
+                    'company_name': parsed_data.get('company_name', f'{symbol} Limited'),
+                    'symbol': symbol,
+                    'latest_year': '2025',
+                    'revenue': parsed_data.get('revenue', 0),
+                    'revenue_growth_3yr': parsed_data.get('revenue_growth_rate', 0),
+                    'net_profit': parsed_data.get('net_profit', 0),
+                    'profit_margin': parsed_data.get('net_profit_margin', 0),
+                    'free_cash_flow': parsed_data.get('free_cash_flow', 0),
+                    'operating_cash_flow': parsed_data.get('operating_cash_flow', 0),
+                    'total_assets': parsed_data.get('total_assets', 0),
+                    'shareholders_equity': parsed_data.get('shareholders_equity', 0),
+                    'total_debt': parsed_data.get('total_debt', 0),
+                    'cash_and_equivalents': parsed_data.get('cash_and_equivalents', 0),
+                    'shares_outstanding': parsed_data.get('shares_outstanding', 0),
+                    'roe': parsed_data.get('roe', 0),
+                    'roa': parsed_data.get('roa', 0),
+                    'debt_to_equity': parsed_data.get('debt_to_equity', 0),
+                    'current_ratio': parsed_data.get('current_ratio', 0),
+                    'quick_ratio': parsed_data.get('quick_ratio', 0),
+                    'book_value_per_share': parsed_data.get('book_value_per_share', 0),
+                    'eps': parsed_data.get('eps', 0),
+                    'data_quality': 'AI_EXTRACTED'
+                }
+            
+        except Exception as e:
+            print(f"❌ Error parsing LLM response: {e}")
+            print(f"Raw response: {response[:500]}...")
+            raise RuntimeError(f"Failed to parse LLM response: {e}")
     
     def analyze_with_llm(self, prompt: str) -> str:
         """
@@ -243,11 +457,11 @@ class LLMPDFAnalyzer:
             elif self.provider == 'ollama' and OLLAMA_AVAILABLE:
                 return self._analyze_with_ollama(prompt)
             else:
-                return self._get_fallback_analysis_response(prompt)
+                raise ValueError(f"No valid LLM provider available. Current provider: {self.provider}")
                 
         except Exception as e:
             print(f"⚠️ LLM analysis failed: {str(e)}")
-            return self._get_fallback_analysis_response(prompt)
+            raise e  # Re-raise instead of falling back to fake data
 
     def _analyze_with_openai(self, prompt: str) -> str:
         """Analyze using OpenAI API"""
@@ -297,33 +511,3 @@ class LLMPDFAnalyzer:
             return response.json()['response']
         except Exception as e:
             raise Exception(f"Ollama analysis failed: {str(e)}")
-
-    def _get_fallback_analysis_response(self, prompt: str) -> str:
-        """Provide fallback analysis when LLM is not available"""
-        return f"""
-## Comprehensive Financial Analysis
-
-Based on the available data, here are the key insights:
-
-### Company Operations
-- The company operates in a competitive industry with established market presence
-- Business model focuses on sustainable growth and market expansion
-- Strong management team with industry experience
-
-### Financial Performance
-- Revenue growth shows consistent trends over the analysis period
-- Profitability margins indicate operational efficiency
-- Cash flow generation supports business sustainability
-
-### Investment Perspective
-- Current valuation requires careful consideration of market conditions
-- Long-term prospects depend on industry dynamics and execution capability
-- Risk factors include market volatility and competitive pressures
-
-### Recommendation Framework
-- Detailed financial ratio analysis recommended for investment decisions
-- Consider comparative analysis with industry peers
-- Monitor quarterly performance for trend validation
-
-*Note: This is a template analysis. For detailed insights, please ensure LLM provider is properly configured.*
-"""

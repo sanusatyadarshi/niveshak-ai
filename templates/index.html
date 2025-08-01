@@ -1,0 +1,112 @@
+{% extends "base.html" %} {% block title %}NiveshakAI - Home{% endblock %} {%
+block content %}
+<div class="card">
+  <h1>Welcome to NiveshakAI</h1>
+  <p>
+    Your AI-powered investment analysis tool that combines fundamental analysis
+    with knowledge from investment books to provide comprehensive stock
+    recommendations.
+  </p>
+</div>
+
+<div
+  style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  "
+>
+  <div class="card">
+    <h2>🔍 Stock Analysis</h2>
+    <p>
+      Analyze NSE/BSE stocks with AI-powered fundamental analysis and DCF
+      valuation.
+    </p>
+    <ul style="margin: 1rem 0; padding-left: 1.5rem">
+      <li>Company fundamental analysis</li>
+      <li>DCF intrinsic value calculation</li>
+      <li>Investment recommendations</li>
+      <li>Ask investment questions</li>
+    </ul>
+    <a href="/analyze" class="btn">Start Analysis</a>
+  </div>
+
+  <div class="card">
+    <h2>📁 Upload Files</h2>
+    <p>Upload annual reports and investment books for analysis.</p>
+    <ul style="margin: 1rem 0; padding-left: 1.5rem">
+      <li>Annual report PDFs</li>
+      <li>Investment book PDFs</li>
+      <li>Automatic processing</li>
+      <li>Knowledge base building</li>
+    </ul>
+    <a href="/upload" class="btn">Upload Files</a>
+  </div>
+
+  <div class="card">
+    <h2>📊 View Reports</h2>
+    <p>Access your generated analysis reports and download them.</p>
+    <ul style="margin: 1rem 0; padding-left: 1.5rem">
+      <li>Analysis reports</li>
+      <li>DCF calculations</li>
+      <li>Investment recommendations</li>
+      <li>Download as PDF/Markdown</li>
+    </ul>
+    <a href="/reports" class="btn">View Reports</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🚀 Quick Start</h2>
+  <ol style="padding-left: 1.5rem">
+    <li>
+      <strong>Upload Annual Reports:</strong> Go to Upload → Annual Reports and
+      upload PDF files for companies you want to analyze (e.g., ITC, ASIANPAINT)
+    </li>
+    <li>
+      <strong>Analyze Companies:</strong> Go to Analyze → Company Analysis and
+      enter a stock symbol to get comprehensive analysis
+    </li>
+    <li>
+      <strong>Ask Questions:</strong> Use the "Ask Investment Questions" feature
+      to get insights from investment knowledge
+    </li>
+    <li>
+      <strong>View Results:</strong> Check the Reports section for all your
+      generated analyses
+    </li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>📈 Current Capabilities</h2>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    "
+  >
+    <div>
+      <h3>✅ Working Features</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>AI-powered PDF analysis</li>
+        <li>DCF valuation engine</li>
+        <li>Fundamental analysis</li>
+        <li>Investment knowledge Q&A</li>
+        <li>Report generation</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🎯 Supported Markets</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>NSE (National Stock Exchange)</li>
+        <li>BSE (Bombay Stock Exchange)</li>
+        <li>Symbol-based analysis</li>
+        <li>Annual report processing</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

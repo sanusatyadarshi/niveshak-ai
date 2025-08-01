@@ -111,7 +111,7 @@ class DCFAnalyzer:
             
         except Exception as e:
             logger.error(f"DCF calculation failed: {str(e)}")
-            return self._get_fallback_dcf_result(financial_data)
+            raise RuntimeError(f"DCF calculation failed: {str(e)}")  # Raise error instead of fallback
     
     def _determine_growth_rates(self, financial_data: Dict[str, Any]) -> List[float]:
         """
@@ -263,41 +263,6 @@ class DCFAnalyzer:
             'confidence': confidence,
             'upside': margin_of_safety,
             'quality_score': quality_score
-        }
-    
-    def _get_fallback_dcf_result(self, financial_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Provide fallback DCF result when calculation fails
-        
-        Args:
-            financial_data: Financial data dictionary
-            
-        Returns:
-            Basic DCF result structure
-        """
-        current_price = financial_data.get('current_price', 0)
-        
-        return {
-            'initial_fcf': 0,
-            'growth_rates': [0.15, 0.12, 0.10, 0.08, 0.05],
-            'projected_fcfs': [0, 0, 0, 0, 0],
-            'present_value_fcfs': [0, 0, 0, 0, 0],
-            'terminal_value': 0,
-            'pv_terminal_value': 0,
-            'enterprise_value': 0,
-            'net_debt': 0,
-            'equity_value': 0,
-            'shares_outstanding': financial_data.get('shares_outstanding', 0),
-            'intrinsic_value_per_share': current_price * 0.7 if current_price > 0 else 100,
-            'current_price': current_price,
-            'margin_of_safety': -30.0,
-            'recommendation': 'HOLD',
-            'confidence': 'LOW',
-            'upside_potential': -30.0,
-            'target_buy_price': current_price * 0.5 if current_price > 0 else 70,
-            'target_sell_price': current_price * 1.2 if current_price > 0 else 120,
-            'discount_rate': self.discount_rate,
-            'terminal_growth_rate': self.terminal_growth_rate
         }
 
 

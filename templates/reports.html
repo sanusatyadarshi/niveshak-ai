@@ -1,0 +1,385 @@
+{% extends "base.html" %} {% block title %}NiveshakAI - Reports{% endblock %} {%
+block content %}
+<div class="card">
+  <h1>Analysis Reports</h1>
+  <p>View and download your generated analysis reports.</p>
+</div>
+
+{% if reports %}
+<div class="card">
+  <h2>📊 Generated Reports ({{ reports|length }})</h2>
+
+  <div class="reports-grid" style="display: grid; gap: 1rem">
+    {% for report in reports %}
+    <div
+      class="report-item"
+      style="
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        background: #f8f9fa;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1rem;
+        "
+      >
+        <div style="flex: 1">
+          <h3 style="margin: 0 0 0.5rem 0; color: #2c3e50">
+            {{ report.filename }}
+          </h3>
+          <p style="margin: 0; color: #666; font-size: 0.9rem">
+            <strong>Modified:</strong> {{ report.modified }} |
+            <strong>Size:</strong> {{ "%.1f"|format(report.size / 1024) }} KB
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-shrink: 0">
+          <button
+            class="btn"
+            onclick="viewReport('{{ report.filename }}')"
+            style="padding: 0.5rem 1rem; font-size: 0.9rem"
+          >
+            View
+          </button>
+          <div class="dropdown" style="position: relative; display: inline-block;">
+            <button 
+              class="btn btn-success dropdown-toggle" 
+              style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+              onclick="toggleDropdown('{{ loop.index0 }}')"
+            >
+              Download ▼
+            </button>
+            <div 
+              id="dropdown-{{ loop.index0 }}" 
+              class="dropdown-content" 
+              style="
+                display: none;
+                position: absolute;
+                right: 0;
+                background-color: white;
+                min-width: 160px;
+                box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                z-index: 1;
+                margin-top: 2px;
+              "
+            >
+              <a 
+                href="/api/reports/{{ report.filename }}" 
+                style="
+                  color: black;
+                  padding: 12px 16px;
+                  text-decoration: none;
+                  display: block;
+                  border-bottom: 1px solid #f1f1f1;
+                "
+                onmouseover="this.style.backgroundColor='#f1f1f1'"
+                onmouseout="this.style.backgroundColor='white'"
+              >
+                📄 Download as MD
+              </a>
+              <a 
+                href="/api/reports/{{ report.filename }}/download-pdf" 
+                style="
+                  color: black;
+                  padding: 12px 16px;
+                  text-decoration: none;
+                  display: block;
+                "
+                onmouseover="this.style.backgroundColor='#f1f1f1'"
+                onmouseout="this.style.backgroundColor='white'"
+              >
+                📑 Download as PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <h2>📊 No Reports Found</h2>
+  <p>You haven't generated any analysis reports yet.</p>
+
+  <div style="margin-top: 2rem">
+    <h3>🚀 Get Started</h3>
+    <ol style="padding-left: 1.5rem; margin-top: 1rem">
+      <li>
+        <strong>Upload Annual Reports:</strong>
+        <a
+          href="/upload"
+          class="btn"
+          style="
+            margin-left: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.9rem;
+          "
+          >Go to Upload</a
+        >
+      </li>
+      <li style="margin-top: 0.5rem">
+        <strong>Analyze Companies:</strong>
+        <a
+          href="/analyze"
+          class="btn btn-success"
+          style="
+            margin-left: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.9rem;
+          "
+          >Start Analysis</a
+        >
+      </li>
+    </ol>
+  </div>
+</div>
+{% endif %}
+
+<!-- Report Viewer Modal -->
+<div
+  id="reportModal"
+  style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+  "
+  onclick="closeReportModal()"
+>
+  <div
+    style="
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80%;
+      overflow: hidden;
+    "
+    onclick="event.stopPropagation()"
+  >
+    <div
+      style="
+        padding: 1rem;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      "
+    >
+      <h3 id="reportModalTitle" style="margin: 0">Report</h3>
+      <button
+        onclick="closeReportModal()"
+        style="
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          padding: 0.25rem;
+        "
+      >
+        &times;
+      </button>
+    </div>
+    <div
+      id="reportModalContent"
+      style="padding: 1rem; max-height: 500px; overflow-y: auto"
+    >
+      <!-- Report content will be loaded here -->
+    </div>
+    <div style="padding: 1rem; border-top: 1px solid #ddd; text-align: right">
+      <button onclick="closeReportModal()" class="btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Types Info -->
+<div class="card">
+  <h2>📋 Report Types</h2>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    "
+  >
+    <div>
+      <h3>🏢 Company Analysis Reports</h3>
+      <p>Comprehensive fundamental analysis including:</p>
+      <ul style="padding-left: 1.5rem">
+        <li>Financial statement analysis</li>
+        <li>Key financial ratios</li>
+        <li>DCF valuation</li>
+        <li>Investment recommendation</li>
+        <li>Risk assessment</li>
+      </ul>
+    </div>
+    <div>
+      <h3>💰 DCF Valuation Reports</h3>
+      <p>Detailed intrinsic value calculations:</p>
+      <ul style="padding-left: 1.5rem">
+        <li>Free cash flow projections</li>
+        <li>Growth assumptions</li>
+        <li>Terminal value calculation</li>
+        <li>Margin of safety analysis</li>
+        <li>Sensitivity analysis</li>
+      </ul>
+    </div>
+    <div>
+      <h3>📊 Report Features</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>Markdown format for easy reading</li>
+        <li>Download as Markdown (.md) or PDF (.pdf)</li>
+        <li>Professional PDF formatting with styling</li>
+        <li>Timestamped for version tracking</li>
+        <li>AI-powered insights and analysis</li>
+        <li>Responsive web viewing</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Usage Tips -->
+<div class="card">
+  <h2>💡 Tips for Using Reports</h2>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    "
+  >
+    <div>
+      <h3>📖 Reading Reports</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>Start with the executive summary</li>
+        <li>Focus on key financial metrics</li>
+        <li>Review the investment recommendation</li>
+        <li>Check the risk assessment section</li>
+      </ul>
+    </div>
+    <div>
+      <h3>💾 Saving & Sharing</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>Download reports for offline reading</li>
+        <li>Share with investment team</li>
+        <li>Archive for future reference</li>
+        <li>Compare multiple company reports</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🔄 Updating Analysis</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>Re-run analysis with new data</li>
+        <li>Upload updated annual reports</li>
+        <li>Compare historical reports</li>
+        <li>Track changes over time</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function viewReport(filename) {
+    const modal = document.getElementById("reportModal");
+    const title = document.getElementById("reportModalTitle");
+    const content = document.getElementById("reportModalContent");
+
+    // Show modal
+    modal.style.display = "block";
+    title.textContent = filename;
+    content.innerHTML =
+      '<div style="text-align: center; padding: 2rem;"><div class="spinner"></div><p>Loading report...</p></div>';
+
+    // Fetch report content
+    fetch(`/api/reports/${filename}/view`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Convert markdown to HTML (basic conversion)
+          const htmlContent = markdownToHtml(data.content);
+          content.innerHTML = `<div style="line-height: 1.6;">${htmlContent}</div>`;
+        } else {
+          content.innerHTML = `<div class="alert alert-error">Failed to load report: ${data.error}</div>`;
+        }
+      })
+      .catch((error) => {
+        content.innerHTML = `<div class="alert alert-error">Error loading report: ${error.message}</div>`;
+      });
+  }
+
+  function closeReportModal() {
+    document.getElementById("reportModal").style.display = "none";
+  }
+
+  function toggleDropdown(index) {
+    const dropdown = document.getElementById(`dropdown-${index}`);
+    const isVisible = dropdown.style.display === "block";
+    
+    // Close all dropdowns first
+    document.querySelectorAll('.dropdown-content').forEach(dd => {
+      dd.style.display = "none";
+    });
+    
+    // Toggle current dropdown
+    dropdown.style.display = isVisible ? "none" : "block";
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.matches('.dropdown-toggle')) {
+      document.querySelectorAll('.dropdown-content').forEach(dd => {
+        dd.style.display = "none";
+      });
+    }
+  });
+
+  // Basic markdown to HTML conversion
+  function markdownToHtml(markdown) {
+    let html = markdown;
+
+    // Headers
+    html = html.replace(/^### (.*$)/gim, "<h3>$1</h3>");
+    html = html.replace(/^## (.*$)/gim, "<h2>$1</h2>");
+    html = html.replace(/^# (.*$)/gim, "<h1>$1</h1>");
+
+    // Bold and italic
+    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+    // Lists (basic)
+    html = html.replace(/^\* (.*$)/gim, "<li>$1</li>");
+    html = html.replace(/^- (.*$)/gim, "<li>$1</li>");
+
+    // Line breaks
+    html = html.replace(/\n/g, "<br>");
+
+    // Wrap lists
+    html = html.replace(/(<li>.*<\/li>)/g, "<ul>$1</ul>");
+
+    return html;
+  }
+
+  // Close modal on escape key
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      closeReportModal();
+    }
+  });
+</script>
+{% endblock %}

@@ -386,11 +386,13 @@ class SymbolStockAnalyzer:
             return ai_extracted_data
             
         except ImportError as e:
-            print(f"⚠️  OpenAI PDF analyzer not available: {e}")
-            print("🔄 Using enhanced fallback data...")
+            error_msg = f"OpenAI PDF analyzer not available: {e}. Please install required dependencies: pip install openai anthropic"
+            print(f"❌ {error_msg}")
+            raise ImportError(error_msg)
         except Exception as e:
-            print(f"❌ Error in AI extraction: {e}")
-            print("🔄 Using enhanced fallback data...")
+            error_msg = f"Financial data extraction failed for {symbol}: {e}"
+            print(f"❌ {error_msg}")
+            raise RuntimeError(error_msg)
         
         # Use unified fallback data service
         symbol_dir = Path(f"data/annual_reports/{symbol}")

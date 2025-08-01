@@ -200,12 +200,29 @@ src/
 - Create unified report format
 ```
 
-### **Phase 4: Advanced Features**
+### **Phase 4: Simple Web Interface**
 
-- Real-time data integration
-- Portfolio optimization
-- Risk assessment scoring
-- Web interface (Streamlit/FastAPI)
+- Basic web UI replicating current CLI functionality
+- Stock symbol input form for analysis
+- Display analysis reports on web pages
+- File upload for annual reports
+- Simple navigation between features
+- Basic responsive design
+
+### **Phase 5: Backend API Development**
+
+- Simple REST API endpoints for existing CLI commands
+- File upload handling for PDFs
+- Basic web server to serve the frontend
+- API endpoints: `/analyze/company`, `/analyze/ask`, `/ingest/books`
+- Static file serving for generated reports
+
+### **Phase 6: Enhanced Web Features**
+
+- Better report formatting for web display
+- Download generated reports as PDF/Markdown
+- Basic search through analysis history
+- Simple report comparison view
 
 ---
 
@@ -251,13 +268,33 @@ cash_and_equivalents: float        # Cash position
 
 ### **Next Milestones**
 
-- [ ] Individual stock analysis engine with user input workflow
-- [ ] Enhanced fundamental analysis with 3-year trend analysis
-- [ ] DCF integration with real company financial data
-- [ ] Unified analysis pipeline combining all features
-- [ ] Advanced visualizations and dashboards
-- [ ] RAG-enhanced investment insights
-- [ ] Mobile-responsive web interface
+#### **Frontend Development (Phase 4)**
+
+- [ ] Simple HTML/CSS/JavaScript web interface
+- [ ] Stock symbol input form
+- [ ] Annual report file upload interface
+- [ ] Display analysis reports in web format
+- [ ] Basic navigation menu (Analyze, Ask Questions, Upload Books)
+- [ ] Simple responsive layout for mobile/desktop
+- [ ] Convert markdown reports to HTML display
+
+#### **Backend Integration (Phase 5)**
+
+- [ ] Flask/FastAPI web server setup
+- [ ] API endpoints for existing CLI commands:
+  - [ ] `POST /api/analyze/company` - Stock analysis
+  - [ ] `POST /api/analyze/ask` - Knowledge questions
+  - [ ] `POST /api/ingest/books` - Upload investment books
+- [ ] File upload handling for PDFs
+- [ ] Static file serving for generated reports
+- [ ] Basic error handling and validation
+
+#### **Core Analysis Enhancement**
+
+- [ ] Web-friendly report formatting
+- [ ] Download reports as PDF/Markdown
+- [ ] Simple report history/listing
+- [ ] Basic search through past analyses
 
 ---
 

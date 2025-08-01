@@ -93,9 +93,21 @@ def analyze_company(company: str, query: str, valuation: str, output: str, confi
             _display_analysis_response(response, verbose)
         
     except Exception as e:
-        click.echo(f"❌ Analysis failed: {str(e)}")
+        error_msg = str(e)
+        if "OpenAI API key not found" in error_msg:
+            click.echo("❌ Analysis Configuration Required")
+            click.echo("")
+            click.echo("AI-powered analysis requires an OpenAI API key:")
+            click.echo("1. Get API key: https://platform.openai.com/api-keys")
+            click.echo("2. Copy template: cp .env.template .env")
+            click.echo("3. Edit .env and add: OPENAI_API_KEY=your_key_here")
+            click.echo("4. Restart the application")
+            click.echo("")
+            click.echo("Without an API key, the system cannot analyze uploaded annual reports.")
+        else:
+            click.echo(f"❌ Analysis failed: {str(e)}")
+        
         if verbose:
-            logger.error(f"Company analysis failed: {str(e)}")
             logger.error(f"Company analysis failed: {str(e)}")
 
 

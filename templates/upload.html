@@ -1,0 +1,311 @@
+{% extends "base.html" %} {% block title %}NiveshakAI - Upload Files{% endblock
+%} {% block content %}
+<div class="card">
+  <h1>Upload Files</h1>
+  <p>
+    Upload annual reports and investment books for analysis and knowledge
+    building.
+  </p>
+</div>
+
+<div
+  style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+  "
+>
+  <!-- Annual Reports Upload -->
+  <div class="card">
+    <h2>📄 Upload Annual Reports</h2>
+    <p>Upload company annual report PDFs for AI-powered analysis.</p>
+
+    <form id="annualReportForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="company">Company Symbol *</label>
+        <input
+          type="text"
+          id="company"
+          name="company"
+          placeholder="e.g., ITC, ASIANPAINT, HDFCBANK"
+          required
+        />
+        <small style="color: #666">Enter NSE/BSE stock symbol</small>
+      </div>
+
+      <div class="form-group">
+        <label for="year">Year *</label>
+        <input
+          type="number"
+          id="year"
+          name="year"
+          min="2020"
+          max="2025"
+          placeholder="e.g., 2024"
+          required
+        />
+        <small style="color: #666">Financial year of the report</small>
+      </div>
+
+      <div class="form-group">
+        <label for="annualReportFile">Annual Report PDF *</label>
+        <input
+          type="file"
+          id="annualReportFile"
+          name="file"
+          accept=".pdf"
+          required
+        />
+        <small style="color: #666"
+          >Only PDF files are supported (max 50MB)</small
+        >
+      </div>
+
+      <button type="submit" class="btn">Upload Annual Report</button>
+    </form>
+
+    <div id="annualReportLoading" class="loading">
+      <div class="spinner"></div>
+      <p>Uploading and processing annual report...</p>
+    </div>
+
+    <div id="annualReportResult" style="display: none">
+      <div id="annualReportContent"></div>
+    </div>
+  </div>
+
+  <!-- Investment Books Upload -->
+  <div class="card">
+    <h2>📚 Upload Investment Books</h2>
+    <p>Upload investment book PDFs to enhance the knowledge base.</p>
+
+    <form id="bookForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="bookFile">Investment Book PDF *</label>
+        <input type="file" id="bookFile" name="file" accept=".pdf" required />
+        <small style="color: #666"
+          >Only PDF files are supported (max 50MB)</small
+        >
+      </div>
+
+      <button type="submit" class="btn btn-success">
+        Upload & Process Book
+      </button>
+    </form>
+
+    <div id="bookLoading" class="loading">
+      <div class="spinner"></div>
+      <p>Uploading and processing book... This may take several minutes.</p>
+    </div>
+
+    <div id="bookResult" style="display: none">
+      <div id="bookContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- File Organization Info -->
+<div class="card">
+  <h2>📁 File Organization</h2>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    "
+  >
+    <div>
+      <h3>Annual Reports Structure</h3>
+      <p>Annual reports are organized by company symbol:</p>
+      <pre
+        style="
+          background: #f8f9fa;
+          padding: 1rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+        "
+      >
+data/annual_reports/
+├── ITC/
+│   ├── 2023.pdf
+│   ├── 2024.pdf
+│   └── 2025.pdf
+├── ASIANPAINT/
+│   ├── 2023.pdf
+│   └── 2024.pdf
+└── HDFCBANK/
+    └── 2024.pdf</pre
+      >
+    </div>
+    <div>
+      <h3>Investment Books</h3>
+      <p>Books are processed and added to the knowledge base:</p>
+      <ul style="padding-left: 1.5rem">
+        <li>Philip Fisher - "Common Stocks and Uncommon Profits"</li>
+        <li>Benjamin Graham - "The Intelligent Investor"</li>
+        <li>Warren Buffett's letters and principles</li>
+        <li>Other investment and financial analysis books</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Guidelines -->
+<div class="card">
+  <h2>📋 Upload Guidelines</h2>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    "
+  >
+    <div>
+      <h3>✅ Supported Formats</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>PDF files only</li>
+        <li>Maximum file size: 50MB</li>
+        <li>Text-based PDFs (not scanned images)</li>
+        <li>Standard annual report formats</li>
+      </ul>
+    </div>
+    <div>
+      <h3>💡 Tips for Best Results</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>Use official annual reports from company websites</li>
+        <li>Ensure PDFs contain text (not just images)</li>
+        <li>Upload reports for last 3 years for trend analysis</li>
+        <li>Use exact NSE/BSE symbols for company names</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🔍 What Gets Extracted</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>Financial statements (P&L, Balance Sheet, Cash Flow)</li>
+        <li>Key financial ratios and metrics</li>
+        <li>Management discussions and analysis</li>
+        <li>Business segment information</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  // Annual Report Upload
+  document
+    .getElementById("annualReportForm")
+    .addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const loadingDiv = document.getElementById("annualReportLoading");
+      const resultDiv = document.getElementById("annualReportResult");
+      const contentDiv = document.getElementById("annualReportContent");
+
+      // Show loading
+      loadingDiv.style.display = "block";
+      resultDiv.style.display = "none";
+
+      try {
+        const response = await fetch("/api/upload/annual-report", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          contentDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h4>✅ Upload Successful</h4>
+                    <p>${data.message}</p>
+                    <p><strong>File saved to:</strong> ${data.filepath}</p>
+                </div>
+            `;
+          // Reset form
+          document.getElementById("annualReportForm").reset();
+        } else {
+          contentDiv.innerHTML = `
+                <div class="alert alert-error">
+                    <h4>❌ Upload Failed</h4>
+                    <p>${data.error}</p>
+                </div>
+            `;
+        }
+      } catch (error) {
+        contentDiv.innerHTML = `
+            <div class="alert alert-error">
+                <h4>❌ Error</h4>
+                <p>Failed to upload file: ${error.message}</p>
+            </div>
+        `;
+      } finally {
+        loadingDiv.style.display = "none";
+        resultDiv.style.display = "block";
+      }
+    });
+
+  // Book Upload
+  document
+    .getElementById("bookForm")
+    .addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const loadingDiv = document.getElementById("bookLoading");
+      const resultDiv = document.getElementById("bookResult");
+      const contentDiv = document.getElementById("bookContent");
+
+      // Show loading
+      loadingDiv.style.display = "block";
+      resultDiv.style.display = "none";
+
+      try {
+        const response = await fetch("/api/upload/book", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          contentDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h4>✅ Upload & Processing Successful</h4>
+                    <p>${data.message}</p>
+                    ${
+                      data.output
+                        ? `<pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; white-space: pre-wrap; font-size: 0.9rem;">${data.output}</pre>`
+                        : ""
+                    }
+                </div>
+            `;
+          // Reset form
+          document.getElementById("bookForm").reset();
+        } else {
+          contentDiv.innerHTML = `
+                <div class="alert alert-error">
+                    <h4>❌ Processing Failed</h4>
+                    <p>${data.error}</p>
+                    ${
+                      data.output
+                        ? `<pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; white-space: pre-wrap; font-size: 0.9rem;">${data.output}</pre>`
+                        : ""
+                    }
+                </div>
+            `;
+        }
+      } catch (error) {
+        contentDiv.innerHTML = `
+            <div class="alert alert-error">
+                <h4>❌ Error</h4>
+                <p>Failed to upload file: ${error.message}</p>
+            </div>
+        `;
+      } finally {
+        loadingDiv.style.display = "none";
+        resultDiv.style.display = "block";
+      }
+    });
+</script>
+{% endblock %}

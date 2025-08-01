@@ -1,0 +1,230 @@
+{% extends "base.html" %} {% block title %}NiveshakAI - Stock Analysis{%
+endblock %} {% block content %}
+<div class="card">
+  <h1>Stock Analysis</h1>
+  <p>
+    Analyze NSE/BSE stocks with AI-powered fundamental analysis and DCF
+    valuation.
+  </p>
+</div>
+
+<div
+  style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+  "
+>
+  <!-- Company Analysis -->
+  <div class="card">
+    <h2>🏢 Company Analysis</h2>
+    <p>
+      Get comprehensive fundamental analysis and DCF valuation for any NSE/BSE
+      stock.
+    </p>
+
+    <form id="companyForm">
+      <div class="form-group">
+        <label for="company">Company Symbol *</label>
+        <input
+          type="text"
+          id="company"
+          name="company"
+          placeholder="e.g., ITC, ASIANPAINT, HDFCBANK"
+          required
+        />
+        <small style="color: #666">Enter NSE/BSE stock symbol</small>
+      </div>
+
+      <div class="form-group">
+        <label for="query">Specific Question (Optional)</label>
+        <textarea
+          id="query"
+          name="query"
+          rows="3"
+          placeholder="e.g., Is this a good investment? What are the key risks?"
+        ></textarea>
+      </div>
+
+      <button type="submit" class="btn">Analyze Company</button>
+    </form>
+
+    <div id="companyLoading" class="loading">
+      <div class="spinner"></div>
+      <p>Analyzing company... This may take a few minutes.</p>
+    </div>
+
+    <div id="companyResult" style="display: none">
+      <h3>Analysis Result</h3>
+      <div id="companyContent"></div>
+    </div>
+  </div>
+
+  <!-- Investment Questions -->
+  <div class="card">
+    <h2>❓ Ask Investment Questions</h2>
+    <p>
+      Get insights from investment knowledge base using Philip Fisher's
+      principles.
+    </p>
+
+    <form id="askForm">
+      <div class="form-group">
+        <label for="investmentQuery">Your Question *</label>
+        <textarea
+          id="investmentQuery"
+          name="query"
+          rows="4"
+          placeholder="e.g., What are the best value investing strategies? How to analyze financial statements?"
+          required
+        ></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-success">Ask Question</button>
+    </form>
+
+    <div id="askLoading" class="loading">
+      <div class="spinner"></div>
+      <p>Searching knowledge base...</p>
+    </div>
+
+    <div id="askResult" style="display: none">
+      <h3>Answer</h3>
+      <div id="askContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Example Queries -->
+<div class="card">
+  <h2>💡 Example Queries</h2>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    "
+  >
+    <div>
+      <h3>Company Analysis Examples</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>ITC</li>
+        <li>ASIANPAINT</li>
+        <li>HDFCBANK</li>
+        <li>TCS</li>
+        <li>RELIANCE</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Investment Question Examples</h3>
+      <ul style="padding-left: 1.5rem">
+        <li>"What are the key financial ratios to look for?"</li>
+        <li>"How to identify undervalued stocks?"</li>
+        <li>"What is DCF valuation?"</li>
+        <li>"Explain margin of safety concept"</li>
+        <li>"How to analyze annual reports?"</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document
+    .getElementById("companyForm")
+    .addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const company = document.getElementById("company").value.trim();
+      const query = document.getElementById("query").value.trim();
+
+      if (!company) {
+        showAlert("Please enter a company symbol", "error");
+        return;
+      }
+
+      showLoading("companyLoading");
+      document.getElementById("companyResult").style.display = "none";
+
+      try {
+        const response = await fetch("/api/analyze/company", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ company, query }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById("companyContent").innerHTML = `
+                <div class="alert alert-success">
+                    <strong>Company:</strong> ${data.company}<br>
+                    <strong>Status:</strong> ${data.message}
+                </div>
+                <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; overflow-x: auto; white-space: pre-wrap;">${
+                  data.analysis ||
+                  "Analysis completed successfully. Check the Reports section for detailed results."
+                }</pre>
+            `;
+          document.getElementById("companyResult").style.display = "block";
+          showAlert("Analysis completed successfully!", "success");
+        } else {
+          showAlert(data.error || "Analysis failed", "error");
+        }
+      } catch (error) {
+        showAlert("Network error: " + error.message, "error");
+      } finally {
+        hideLoading("companyLoading");
+      }
+    });
+
+  document
+    .getElementById("askForm")
+    .addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const query = document.getElementById("investmentQuery").value.trim();
+
+      if (!query) {
+        showAlert("Please enter a question", "error");
+        return;
+      }
+
+      showLoading("askLoading");
+      document.getElementById("askResult").style.display = "none";
+
+      try {
+        const response = await fetch("/api/analyze/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById("askContent").innerHTML = `
+                <div class="alert alert-success">
+                    <strong>Question:</strong> ${data.query}<br>
+                    <strong>Status:</strong> ${data.message}
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; line-height: 1.6;">
+                    ${data.answer || "Answer generated successfully."}
+                </div>
+            `;
+          document.getElementById("askResult").style.display = "block";
+          showAlert("Question answered successfully!", "success");
+        } else {
+          showAlert(data.error || "Query failed", "error");
+        }
+      } catch (error) {
+        showAlert("Network error: " + error.message, "error");
+      } finally {
+        hideLoading("askLoading");
+      }
+    });
+</script>
+{% endblock %}
