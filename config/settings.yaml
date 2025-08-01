@@ -29,11 +29,11 @@ embedding:
   batch_size: 50
   chunk_overlap: 100
   chunk_size: 500
-  model: nomic-embed-text
-  provider: ollama
+  model: text-embedding-3-small
+  provider: openai
 llm:
-  fallback_provider: openai
-  provider: ollama
+  fallback_provider: ollama
+  provider: openai
   # PDF Analysis LLM Configuration
   pdf_analysis:
     provider: openai # Default to OpenAI for PDF analysis (openai, anthropic, ollama)

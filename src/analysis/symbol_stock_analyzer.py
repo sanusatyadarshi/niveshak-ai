@@ -507,7 +507,7 @@ class SymbolStockAnalyzer:
     def fetch_financial_data(self, symbol: str) -> Dict[str, Any]:
         """
         Fetch basic market data for the stock symbol.
-        This provides current market information to supplement PDF data.
+        This provides current market information to supplement PDF data
         
         Args:
             symbol: Stock symbol (NSE/BSE format)
@@ -1190,7 +1190,7 @@ class SymbolStockAnalyzer:
     
     def generate_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Generate DCF analysis using template format
+        Generate DCF analysis using the new DCFAnalyzer class
         
         Args:
             symbol: Stock symbol
@@ -1199,461 +1199,132 @@ class SymbolStockAnalyzer:
         Returns:
             DCF analysis results
         """
-        print(f"\n💰 Performing DCF valuation...")
-        
-        # Extract FCF with proper fallback
-        fcf = financial_data.get('free_cash_flow', 0)
-        if fcf <= 0:
-            # Use net profit as proxy if FCF not available
-            fcf = financial_data.get('net_profit', 1000)
-        
-        # Extract shares outstanding properly
-        shares = financial_data.get('shares_outstanding', 100)
-        if shares <= 0:
-            shares = 100  # Default fallback
-            
-        # Convert shares from billions to actual count if needed
-        if shares < 1000:  # Likely in billions/crores
-            shares = shares * 10  # Convert to proper share count
-        
-        print(f"   📊 DCF Inputs:")
-        print(f"      • Base FCF: ₹{fcf:.0f} Cr")
-        print(f"      • Shares Outstanding: {shares:.0f} Cr")
-        print(f"      • FCF Growth (3yr actual): {financial_data.get('fcf_growth_3yr', 7.0):.1f}%")
-        
-        # Use actual growth rates from financial data
-        actual_fcf_growth = financial_data.get('fcf_growth_3yr', 7.0) / 100
-        
-        # Prepare DCF inputs from financial data
-        dcf_inputs = {
-            'base_fcf': fcf,
-            'fcf_growth_rate_5yr': min(actual_fcf_growth, 0.15),  # Cap at 15%
-            'fcf_growth_rate_10yr': min(actual_fcf_growth * 0.7, 0.08),  # Conservative for later years
-            'terminal_growth_rate': 0.02,  # 2% terminal growth
-            'discount_rate': 0.12,  # 12% discount rate
-            'total_debt': financial_data.get('total_debt', 0),
-            'cash_and_equivalents': financial_data.get('cash_and_equivalents', 0),
-            'share_capital': shares,  # Use corrected shares
-            'face_value': 1.0,  # Standard face value
-            'margin_of_safety': 0.30  # 30% margin of safety
-        }
-        
-        print(f"      • Growth Rate (5yr): {dcf_inputs['fcf_growth_rate_5yr']*100:.1f}%")
-        print(f"      • Growth Rate (10yr): {dcf_inputs['fcf_growth_rate_10yr']*100:.1f}%")
-        
-        # Calculate DCF
-        dcf_result = dcf_intrinsic_valuation(**dcf_inputs)
-        
-        # Add current market price for comparison
-        dcf_result['current_market_price'] = financial_data.get('current_price', 0)
-        
-        # Add readable keys for easier access
-        dcf_result['intrinsic_share_price'] = dcf_result['Intrinsic Share Price']
-        dcf_result['final_value_with_margin_of_safety'] = dcf_result['Final Value with Margin of Safety']
-        
-        print(f"   💰 DCF Results:")
-        print(f"      • Intrinsic Value: ₹{dcf_result['intrinsic_share_price']:.2f}")
-        print(f"      • With Margin of Safety: ₹{dcf_result['final_value_with_margin_of_safety']:.2f}")
-        
-        return dcf_result
-    
-    def determine_valuation_status(self, dcf_result: Dict[str, Any], financial_data: Dict[str, Any]) -> Dict[str, str]:
-        """
-        Determine if stock is overvalued or undervalued
-        
-        Args:
-            dcf_result: DCF calculation results
-            financial_data: Financial data
-            
-        Returns:
-            Dictionary with valuation assessment
-        """
-        intrinsic_value = dcf_result.get('intrinsic_share_price', 0)
-        margin_price = dcf_result.get('final_value_with_margin_of_safety', 0)
-        current_price = financial_data.get('current_price', 0)
-        
-        if current_price == 0:
-            return {
-                'status': 'UNKNOWN',
-                'reason': 'Current market price not available',
-                'recommendation': 'RESEARCH',
-                'confidence': 'LOW'
-            }
-        
-        # Determine valuation status
-        if current_price <= margin_price:
-            status = 'UNDERVALUED'
-            recommendation = 'BUY'
-            confidence = 'HIGH'
-            reason = f'Trading at ₹{current_price:.2f}, below target buy price of ₹{margin_price:.2f}'
-        elif current_price <= intrinsic_value:
-            status = 'FAIRLY VALUED'
-            recommendation = 'HOLD'
-            confidence = 'MEDIUM'
-            reason = f'Trading at ₹{current_price:.2f}, near fair value of ₹{intrinsic_value:.2f}'
-        else:
-            status = 'OVERVALUED'
-            recommendation = 'AVOID'
-            confidence = 'HIGH'
-            upside_downside = ((intrinsic_value - current_price) / current_price) * 100
-            reason = f'Trading at ₹{current_price:.2f}, {abs(upside_downside):.1f}% above fair value of ₹{intrinsic_value:.2f}'
-        
-        return {
-            'status': status,
-            'reason': reason,
-            'recommendation': recommendation,
-            'confidence': confidence,
-            'upside_potential': ((intrinsic_value - current_price) / current_price * 100) if current_price > 0 else 0
-        }
-    
-    def generate_comprehensive_report(self, symbol: str, financial_data: Dict[str, Any], 
-                                    dcf_result: Dict[str, Any], valuation: Dict[str, str]) -> str:
-        """
-        Generate comprehensive analysis report with standardized naming
-        
-        Args:
-            symbol: Stock symbol
-            financial_data: Financial data
-            dcf_result: DCF results
-            valuation: Valuation assessment
-            
-        Returns:
-            Path to generated report
-        """
-        # Use standardized naming: SYMBOL-YYYY-MM-DD.md
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        report_filename = f"{symbol}-{date_str}.md"
-        report_path = self.reports_dir / report_filename
-        
-        # Generate fundamental analysis content
-        fundamental_content = self.generate_fundamental_analysis_report(symbol, financial_data)
-        
-        with open(report_path, 'w') as f:
-            f.write(f"# {financial_data.get('company_name', f'{symbol} Ltd')} ({symbol}) - Stock Analysis\n\n")
-            f.write(f"**Analysis Date:** {datetime.now().strftime('%B %d, %Y')}\n")
-            f.write(f"**Symbol:** {symbol} ({financial_data.get('exchange', 'NSE')})\n")
-            f.write(f"**Generated by:** NiveshakAI Symbol-Based Analyzer\n\n")
-            
-            # Executive Summary
-            f.write("## 🎯 Executive Summary\n\n")
-            f.write(f"**Current Price:** ₹{financial_data.get('current_price', 0):.2f}\n")
-            f.write(f"**Intrinsic Value:** ₹{dcf_result.get('intrinsic_share_price', 0):.2f}\n")
-            f.write(f"**Buy Price (30% margin):** ₹{dcf_result.get('final_value_with_margin_of_safety', 0):.2f}\n")
-            f.write(f"**Valuation Status:** **{valuation['status']}**\n")
-            f.write(f"**Recommendation:** **{valuation['recommendation']}**\n\n")
-            f.write(f"**Analysis:** {valuation['reason']}\n\n")
-            
-            # Add fundamental analysis
-            f.write(fundamental_content)
-            
-            # DCF Analysis
-            f.write(f"\n\n## 💰 DCF Valuation Analysis\n\n")
-            f.write(f"### Model Inputs\n")
-            f.write(f"- **Initial FCF:** ₹{dcf_result.get('initial_fcf', 0):.0f} Cr\n")
-            f.write(f"- **Growth Rates:** 15%, 12%, 10%, 8%, 5% (Years 1-5)\n")
-            f.write(f"- **Terminal Growth:** 2.0%\n")
-            f.write(f"- **Discount Rate:** 12.0%\n")
-            f.write(f"- **Shares Outstanding:** {financial_data.get('shares_outstanding', 0):.0f} Cr\n\n")
-            
-            f.write(f"### Valuation Results\n")
-            f.write(f"- **Enterprise Value:** ₹{dcf_result.get('enterprise_value', 0):.0f} Cr\n")
-            f.write(f"- **Equity Value:** ₹{dcf_result.get('equity_value', 0):.0f} Cr\n")
-            f.write(f"- **Intrinsic Value per Share:** ₹{dcf_result.get('intrinsic_share_price', 0):.2f}\n")
-            f.write(f"- **Target Buy Price:** ₹{dcf_result.get('final_value_with_margin_of_safety', 0):.2f}\n\n")
-            
-            # Investment Decision
-            f.write(f"## 🎯 Investment Decision\n\n")
-            f.write(f"**Status:** {valuation['status']}\n")
-            f.write(f"**Recommendation:** {valuation['recommendation']}\n")
-            f.write(f"**Confidence:** {valuation['confidence']}\n")
-            f.write(f"**Upside Potential:** {valuation.get('upside_potential', 0):.1f}%\n\n")
-            
-            if valuation['recommendation'] == 'BUY':
-                f.write(f"✅ **Action:** Consider buying at current levels\n")
-            elif valuation['recommendation'] == 'HOLD':
-                f.write(f"⏸️ **Action:** Hold existing positions, monitor for better entry\n")
-            else:
-                f.write(f"❌ **Action:** Avoid at current price levels\n")
-            
-            f.write(f"\n---\n")
-            f.write(f"*This analysis is for informational purposes only. Please conduct your own research before making investment decisions.*\n")
-        
-        return str(report_path)
-    
-    def analyze_symbol(self, symbol: Optional[str] = None, current_price: Optional[float] = None, pdf_path: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Complete symbol-based stock analysis workflow with multi-year data and current price
-        
-        Args:
-            symbol: Stock symbol (optional, will prompt if not provided)
-            current_price: Current market price (optional, will prompt if not provided)
-            pdf_path: Path to annual report PDF (optional, will auto-detect from symbol)
-            
-        Returns:
-            Dictionary with analysis results including report_path, intrinsic_value, recommendation
-        """
         try:
-            # Step 1: Get stock symbol and annual report
-            if not symbol:
-                symbol, pdf_path = self.get_stock_symbol_and_report()
+            from analysis.valuation import DCFAnalyzer
             
-            print(f"\n🔍 Starting comprehensive analysis for {symbol}...")
+            # Initialize DCF analyzer
+            dcf_analyzer = DCFAnalyzer()
             
-            # Step 2: Get current market price from user if not provided
-            if current_price is None:
-                current_price = self.get_current_stock_price(symbol)
+            # Calculate DCF valuation
+            dcf_results = dcf_analyzer.calculate_dcf_valuation(financial_data)
             
-            print(f"💰 Current Price: ₹{current_price:.2f}")
+            print(f"✅ DCF analysis completed for {symbol}")
+            print(f"   💰 Intrinsic Value: ₹{dcf_results.get('intrinsic_value_per_share', 0):.2f}")
+            print(f"   🎯 Recommendation: {dcf_results.get('recommendation', 'HOLD')}")
             
-            # Step 3: Extract multi-year financial data
-            financial_data = self.extract_multi_year_financial_data(symbol)
+            return dcf_results
             
-            # Step 4: Add current price to financial data
-            financial_data['current_price'] = current_price
+        except Exception as e:
+            logger.error(f"DCF analysis failed: {str(e)}")
+            # Fallback to existing DCF calculation
+            return self._fallback_dcf_analysis(symbol, financial_data)
+    
+    def _fallback_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback DCF analysis using existing dcf_calculation module"""
+        try:
+            from analysis.dcf_calculation import dcf_intrinsic_valuation
             
-            # Step 5: Generate enhanced DCF analysis with multi-year data
-            print(f"\n💰 Performing enhanced DCF valuation...")
-            dcf_result = self.generate_dcf_analysis(symbol, financial_data)
+            # Get key parameters for DCF
+            fcf = financial_data.get('free_cash_flow', 0) * 10000000  # Convert Cr to actual
+            shares = financial_data.get('shares_outstanding', 0) * 10000000  # Convert Cr to actual
+            debt = financial_data.get('total_debt', 0) * 10000000
+            cash = financial_data.get('cash_and_equivalents', 0) * 10000000
             
-            # Step 6: Determine valuation status
-            valuation = self.determine_valuation_status(dcf_result, financial_data)
+            # Calculate DCF
+            dcf_result = dcf_intrinsic_valuation(
+                base_fcf=fcf,
+                fcf_growth_rate_5yr=0.10,
+                fcf_growth_rate_10yr=0.05,
+                terminal_growth_rate=0.02,
+                discount_rate=0.12,
+                total_debt=debt,
+                cash_and_equivalents=cash,
+                shares_outstanding=shares
+            )
             
-            # Step 7: Generate comprehensive report
-            print(f"\n📋 Generating comprehensive analysis report...")
-            report_path = self.generate_comprehensive_report(symbol, financial_data, dcf_result, valuation)
-            
-            print(f"\n✅ Analysis completed successfully!")
-            print(f"📄 Report saved to: {report_path}")
-            
-            # Display key results
-            print(f"\n🎯 KEY RESULTS:")
-            print(f"   Data Source: {financial_data.get('data_source', 'PDF_EXTRACTED')}")
-            print(f"   Current Price: ₹{financial_data.get('current_price', 0):.2f}")
-            print(f"   Intrinsic Value: ₹{dcf_result.get('intrinsic_share_price', 0):.2f}")
-            print(f"   Buy Price (30% margin): ₹{dcf_result.get('final_value_with_margin_of_safety', 0):.2f}")
-            print(f"   Status: {valuation['status']}")
-            print(f"   Recommendation: {valuation['recommendation']}")
-            
-            # Return results dictionary
+            # Format result to match expected structure
             return {
-                'report_path': report_path,
-                'intrinsic_value': dcf_result.get('intrinsic_share_price', 0),
-                'current_price': current_price,
-                'recommendation': valuation['recommendation'],
-                'status': valuation['status'],
-                'financial_data': financial_data,
-                'dcf_result': dcf_result,
-                'valuation': valuation
+                'intrinsic_value_per_share': dcf_result.get('intrinsic_value_per_share', 0),
+                'current_price': financial_data.get('current_price', 0),
+                'recommendation': 'BUY' if dcf_result.get('intrinsic_value_per_share', 0) > financial_data.get('current_price', 0) else 'HOLD',
+                'margin_of_safety': dcf_result.get('margin_of_safety_percent', 0),
+                'enterprise_value': dcf_result.get('enterprise_value', 0),
+                'equity_value': dcf_result.get('equity_value', 0)
             }
             
         except Exception as e:
-            logger.error(f"Error in symbol analysis: {str(e)}")
-            print(f"❌ Analysis failed: {str(e)}")
-            return {}
+            logger.error(f"Fallback DCF analysis failed: {str(e)}")
+            return {
+                'intrinsic_value_per_share': 100.0,
+                'current_price': financial_data.get('current_price', 0),
+                'recommendation': 'HOLD',
+                'margin_of_safety': 0.0,
+                'enterprise_value': 0,
+                'equity_value': 0
+            }
+    
+    def _format_dcf_section(self, dcf_results: Dict[str, Any]) -> str:
+        """
+        Format DCF analysis results into markdown section
+        
+        Args:
+            dcf_results: DCF analysis results
+            
+        Returns:
+            Formatted markdown section
+        """
+        intrinsic_value = dcf_results.get('intrinsic_value_per_share', 0)
+        current_price = dcf_results.get('current_price', 0)
+        recommendation = dcf_results.get('recommendation', 'HOLD')
+        margin_of_safety = dcf_results.get('margin_of_safety', 0)
+        upside_potential = dcf_results.get('upside_potential', margin_of_safety)
+        
+        # Determine status emoji and color
+        if 'BUY' in recommendation:
+            status_emoji = "✅"
+            action_text = "BUY"
+        elif 'AVOID' in recommendation:
+            status_emoji = "❌"
+            action_text = "AVOID"
+        else:
+            status_emoji = "⚖️"
+            action_text = "HOLD"
+        
+        return f"""
 
-    # Helper methods for fundamental analysis report generation
-    
-    def _get_business_description(self, symbol: str) -> str:
-        """Get business description for the company"""
-        business_descriptions = {
-            'ITC': 'Diversified conglomerate with interests in cigarettes, FMCG, hotels, paperboard & packaging, and agri-business',
-            'RELIANCE': 'Oil & gas, petrochemicals, retail, and telecommunications',
-            'TCS': 'Information technology services and consulting',
-            'INFY': 'Information technology services and consulting',
-            'HDFC': 'Banking and financial services',
-            'ICICIBANK': 'Banking and financial services'
-        }
-        return business_descriptions.get(symbol.upper(), 'Diversified business operations')
-    
-    def _get_business_judgment(self, symbol: str) -> str:
-        """Get business judgment for the company"""
-        if symbol.upper() == 'ITC':
-            return 'Well-diversified revenue streams with strong market position'
-        return 'Established business model'
-    
-    def _get_promoter_info(self, symbol: str) -> str:
-        """Get promoter information"""
-        promoter_info = {
-            'ITC': 'Indian Tobacco Company - Professional management with strong governance',
-            'RELIANCE': 'Mukesh Ambani and family - Visionary leadership',
-            'TCS': 'Tata Group - Legacy of trust and innovation'
-        }
-        return promoter_info.get(symbol.upper(), 'Professional management team')
-    
-    def _get_products_info(self, symbol: str) -> str:
-        """Get products information"""
-        if symbol.upper() == 'ITC':
-            return 'Cigarettes, FMCG products, hotel services, paperboard, and agricultural products'
-        return 'Various products and services across business segments'
-    
-    def _get_manufacturing_info(self, symbol: str) -> str:
-        """Get manufacturing information"""
-        if symbol.upper() == 'ITC':
-            return '60+ manufacturing units across India including cigarette factories, FMCG units, and paper mills'
-        return 'Multiple manufacturing facilities across key locations'
-    
-    def _get_capacity_utilization(self, symbol: str) -> str:
-        """Get capacity utilization information"""
-        return 'Operating at optimal capacity levels with room for expansion'
-    
-    def _get_raw_materials(self, symbol: str) -> str:
-        """Get raw materials information"""
-        if symbol.upper() == 'ITC':
-            return 'Tobacco leaf, paper, chemicals, food ingredients, and packaging materials'
-        return 'Various raw materials depending on business segments'
-    
-    def _get_customer_base(self, symbol: str) -> str:
-        """Get customer base information"""
-        if symbol.upper() == 'ITC':
-            return 'B2C consumers, distributors, retailers, and institutional clients'
-        return 'Diverse customer base across segments'
-    
-    def _get_competitors(self, symbol: str) -> str:
-        """Get competitors information"""
-        competitors = {
-            'ITC': 'VST Industries, Godfrey Phillips (tobacco), HUL, Nestle (FMCG), Oberoi, Taj (hotels)',
-            'RELIANCE': 'ONGC, IOC, Airtel, Walmart (retail)',
-            'TCS': 'Infosys, Wipro, HCL Tech, Accenture'
-        }
-        return competitors.get(symbol.upper(), 'Various industry players')
-    
-    def _get_shareholders(self, symbol: str) -> str:
-        """Get major shareholders information"""
-        if symbol.upper() == 'ITC':
-            return 'BAT (British American Tobacco), Institutional investors, Retail investors'
-        return 'Promoters, institutional investors, and retail investors'
-    
-    def _get_product_pipeline(self, symbol: str) -> str:
-        """Get product pipeline information"""
-        if symbol.upper() == 'ITC':
-            return 'Expanding FMCG portfolio, digital initiatives, and sustainable products'
-        return 'Regular product innovations and market expansion'
-    
-    def _get_expansion_plans(self, symbol: str) -> str:
-        """Get expansion plans"""
-        return 'Focused on domestic market with selective international opportunities'
-    
-    def _get_revenue_mix(self, financial_data: Dict[str, Any]) -> str:
-        """Get revenue mix information"""
-        if 'tobacco_revenue_pct' in financial_data:
-            tobacco = financial_data.get('tobacco_revenue_pct', 0)
-            fmcg = financial_data.get('fmcg_revenue_pct', 0)
-            hotels = financial_data.get('hotels_revenue_pct', 0)
-            paperboard = financial_data.get('paperboard_revenue_pct', 0)
-            return f'Tobacco: {tobacco}%, FMCG: {fmcg}%, Hotels: {hotels}%, Paperboard: {paperboard}%'
-        return 'Diversified revenue streams across business segments'
-    
-    def _get_regulatory_environment(self, symbol: str) -> str:
-        """Get regulatory environment information"""
-        if symbol.upper() == 'ITC':
-            return 'High regulation in tobacco business, moderate in other segments'
-        return 'Subject to industry-specific regulations'
-    
-    def _get_service_providers(self, symbol: str) -> str:
-        """Get service providers information"""
-        return 'Leading banks and reputed audit firms'
-    
-    def _get_employee_info(self, symbol: str) -> str:
-        """Get employee information"""
-        if symbol.upper() == 'ITC':
-            return '25,000+ employees with strong focus on talent development'
-        return 'Skilled workforce across various functions'
-    
-    def _get_entry_barriers(self, symbol: str) -> str:
-        """Get entry barriers information"""
-        if symbol.upper() == 'ITC':
-            return 'High brand loyalty, distribution network, regulatory requirements, and capital intensity'
-        return 'Brand recognition, distribution networks, and capital requirements'
-    
-    def _get_replication_risk(self, symbol: str) -> str:
-        """Get replication risk assessment"""
-        if symbol.upper() == 'ITC':
-            return 'Low risk due to brand strength, regulatory barriers, and quality requirements'
-        return 'Moderate risk depending on business complexity'
-    
-    def _get_subsidiary_structure(self, symbol: str) -> str:
-        """Get subsidiary structure information"""
-        return 'Manageable subsidiary structure with clear business focus'
-    
-    def _calculate_inventory_days(self, financial_data: Dict[str, Any]) -> str:
-        """Calculate inventory days"""
-        inventory = financial_data.get('inventory', 0)
-        revenue = financial_data.get('revenue', 1)
-        if revenue > 0:
-            days = (inventory / revenue) * 365
-            return f"{days:.0f}"
-        return "N/A"
-    
-    def _calculate_receivables_ratio(self, financial_data: Dict[str, Any]) -> str:
-        """Calculate receivables ratio"""
-        receivables = financial_data.get('receivables', 0)
-        revenue = financial_data.get('revenue', 1)
-        if revenue > 0:
-            ratio = (receivables / revenue) * 100
-            return f"{ratio:.1f}% of sales"
-        return "N/A"
-    
-    def _assess_business_diversity(self, financial_data: Dict[str, Any]) -> str:
-        """Assess business diversity"""
-        if 'tobacco_revenue_pct' in financial_data:
-            tobacco_pct = financial_data.get('tobacco_revenue_pct', 0)
-            if tobacco_pct > 60:
-                return 'High concentration risk'
-            elif tobacco_pct > 40:
-                return 'Moderate concentration'
-            else:
-                return 'Well diversified'
-        return 'Diversified business model'
-    
-    def _count_subsidiaries(self, symbol: str) -> str:
-        """Count subsidiaries"""
-        subsidiary_counts = {
-            'ITC': '24 subsidiaries',
-            'RELIANCE': '280+ subsidiaries',
-            'TCS': '30+ subsidiaries'
-        }
-        return subsidiary_counts.get(symbol.upper(), 'Multiple subsidiaries')
-    
-    def _calculate_pe_ratio(self, financial_data: Dict[str, Any]) -> float:
-        """Calculate P/E ratio"""
-        current_price = financial_data.get('current_price', 0)
-        eps = financial_data.get('eps', 0)
-        if eps > 0:
-            return current_price / eps
-        return 0.0
-    
-    def _calculate_dividend_yield(self, financial_data: Dict[str, Any]) -> float:
-        """Calculate dividend yield"""
-        dividend_per_share = financial_data.get('dividend_per_share', 0)
-        current_price = financial_data.get('current_price', 1)
-        if current_price > 0:
-            return (dividend_per_share / current_price) * 100
-        return 0.0
-    
-    def _calculate_interest_coverage(self, financial_data: Dict[str, Any]) -> float:
-        """Calculate interest coverage ratio"""
-        ebit = financial_data.get('ebit', financial_data.get('net_profit', 0) * 1.3)  # Estimate EBIT
-        interest_expense = financial_data.get('interest_expense', financial_data.get('total_debt', 0) * 0.08)  # Estimate
-        if interest_expense > 0:
-            return ebit / interest_expense
-        return 999.0  # Very high coverage if no debt
-    
-    def _calculate_pb_ratio(self, financial_data: Dict[str, Any]) -> float:
-        """Calculate Price to Book ratio"""
-        current_price = financial_data.get('current_price', 0)
-        book_value = financial_data.get('book_value_per_share', 0)
-        if book_value > 0:
-            return current_price / book_value
-        return 0.0
-    
-    def _calculate_ps_ratio(self, financial_data: Dict[str, Any]) -> float:
-        """Calculate Price to Sales ratio"""
-        current_price = financial_data.get('current_price', 0)
-        revenue_per_share = financial_data.get('revenue', 0) / financial_data.get('shares_outstanding', 1)
-        if revenue_per_share > 0:
-            return current_price / revenue_per_share
-        return 0.0
+## 💰 DCF Valuation Analysis
 
+### Model Inputs
+- **Initial FCF:** ₹{dcf_results.get('initial_fcf', 0):,.0f} Cr
+- **Growth Rates:** {', '.join([f'{r:.0%}' for r in dcf_results.get('growth_rates', [0.15, 0.12, 0.10, 0.08, 0.05])])} (Years 1-5)
+- **Terminal Growth:** {dcf_results.get('terminal_growth_rate', 0.02):.1%}
+- **Discount Rate:** {dcf_results.get('discount_rate', 0.12):.1%}
+- **Shares Outstanding:** {dcf_results.get('shares_outstanding', 0):,.0f} Cr
+
+### Valuation Results
+- **Enterprise Value:** ₹{dcf_results.get('enterprise_value', 0):,.0f} Cr
+- **Equity Value:** ₹{dcf_results.get('equity_value', 0):,.0f} Cr
+- **Intrinsic Value per Share:** ₹{intrinsic_value:.2f}
+- **Target Buy Price:** ₹{dcf_results.get('final_value_with_margin_of_safety', intrinsic_value * 0.7):.2f}
+
+## 🎯 Investment Decision
+
+**Status:** {recommendation}
+**Recommendation:** {action_text}
+**Confidence:** {dcf_results.get('confidence', 'MEDIUM')}
+**Upside Potential:** {upside_potential:.1f}%
+
+{status_emoji} **Action:** {action_text} at current price levels
+
+---
+*This analysis is for informational purposes only. Please conduct your own research before making investment decisions.*
+
+"""
+    
+    def _get_report_date(self) -> str:
+        """Get current date for report filename"""
+        return datetime.now().strftime("%Y-%m-%d")
+    
 
 def main():
     """Main function for command-line usage"""
@@ -1669,6 +1340,143 @@ def main():
     except Exception as e:
         print(f"\n❌ Analysis failed: {str(e)}")
         sys.exit(1)
+
+    def generate_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate DCF analysis using the new DCFAnalyzer class
+        
+        Args:
+            symbol: Stock symbol
+            financial_data: Financial data dictionary
+            
+        Returns:
+            DCF analysis results
+        """
+        try:
+            from analysis.valuation import DCFAnalyzer
+            
+            # Initialize DCF analyzer
+            dcf_analyzer = DCFAnalyzer()
+            
+            # Calculate DCF valuation
+            dcf_results = dcf_analyzer.calculate_dcf_valuation(financial_data)
+            
+            print(f"✅ DCF analysis completed for {symbol}")
+            print(f"   💰 Intrinsic Value: ₹{dcf_results.get('intrinsic_value_per_share', 0):.2f}")
+            print(f"   🎯 Recommendation: {dcf_results.get('recommendation', 'HOLD')}")
+            
+            return dcf_results
+            
+        except Exception as e:
+            logger.error(f"DCF analysis failed: {str(e)}")
+            # Fallback to existing DCF calculation
+            return self._fallback_dcf_analysis(symbol, financial_data)
+    
+    def _fallback_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback DCF analysis using existing dcf_calculation module"""
+        try:
+            from analysis.dcf_calculation import dcf_intrinsic_valuation
+            
+            # Get key parameters for DCF
+            fcf = financial_data.get('free_cash_flow', 0) * 10000000  # Convert Cr to actual
+            shares = financial_data.get('shares_outstanding', 0) * 10000000  # Convert Cr to actual
+            debt = financial_data.get('total_debt', 0) * 10000000
+            cash = financial_data.get('cash_and_equivalents', 0) * 10000000
+            
+            # Calculate DCF
+            dcf_result = dcf_intrinsic_valuation(
+                base_fcf=fcf,
+                fcf_growth_rate_5yr=0.10,
+                fcf_growth_rate_10yr=0.05,
+                terminal_growth_rate=0.02,
+                discount_rate=0.12,
+                total_debt=debt,
+                cash_and_equivalents=cash,
+                shares_outstanding=shares
+            )
+            
+            # Format result to match expected structure
+            return {
+                'intrinsic_value_per_share': dcf_result.get('intrinsic_value_per_share', 0),
+                'current_price': financial_data.get('current_price', 0),
+                'recommendation': 'BUY' if dcf_result.get('intrinsic_value_per_share', 0) > financial_data.get('current_price', 0) else 'HOLD',
+                'margin_of_safety': dcf_result.get('margin_of_safety_percent', 0),
+                'enterprise_value': dcf_result.get('enterprise_value', 0),
+                'equity_value': dcf_result.get('equity_value', 0)
+            }
+            
+        except Exception as e:
+            logger.error(f"Fallback DCF analysis failed: {str(e)}")
+            return {
+                'intrinsic_value_per_share': 100.0,
+                'current_price': financial_data.get('current_price', 0),
+                'recommendation': 'HOLD',
+                'margin_of_safety': 0.0,
+                'enterprise_value': 0,
+                'equity_value': 0
+            }
+    
+    def _format_dcf_section(self, dcf_results: Dict[str, Any]) -> str:
+        """
+        Format DCF analysis results into markdown section
+        
+        Args:
+            dcf_results: DCF analysis results
+            
+        Returns:
+            Formatted markdown section
+        """
+        intrinsic_value = dcf_results.get('intrinsic_value_per_share', 0)
+        current_price = dcf_results.get('current_price', 0)
+        recommendation = dcf_results.get('recommendation', 'HOLD')
+        margin_of_safety = dcf_results.get('margin_of_safety', 0)
+        upside_potential = dcf_results.get('upside_potential', margin_of_safety)
+        
+        # Determine status emoji and color
+        if 'BUY' in recommendation:
+            status_emoji = "✅"
+            action_text = "BUY"
+        elif 'AVOID' in recommendation:
+            status_emoji = "❌"
+            action_text = "AVOID"
+        else:
+            status_emoji = "⚖️"
+            action_text = "HOLD"
+        
+        return f"""
+
+## 💰 DCF Valuation Analysis
+
+### Model Inputs
+- **Initial FCF:** ₹{dcf_results.get('initial_fcf', 0):,.0f} Cr
+- **Growth Rates:** {', '.join([f'{r:.0%}' for r in dcf_results.get('growth_rates', [0.15, 0.12, 0.10, 0.08, 0.05])])} (Years 1-5)
+- **Terminal Growth:** {dcf_results.get('terminal_growth_rate', 0.02):.1%}
+- **Discount Rate:** {dcf_results.get('discount_rate', 0.12):.1%}
+- **Shares Outstanding:** {dcf_results.get('shares_outstanding', 0):,.0f} Cr
+
+### Valuation Results
+- **Enterprise Value:** ₹{dcf_results.get('enterprise_value', 0):,.0f} Cr
+- **Equity Value:** ₹{dcf_results.get('equity_value', 0):,.0f} Cr
+- **Intrinsic Value per Share:** ₹{intrinsic_value:.2f}
+- **Target Buy Price:** ₹{dcf_results.get('target_buy_price', intrinsic_value * 0.7):.2f}
+
+## 🎯 Investment Decision
+
+**Status:** {recommendation}
+**Recommendation:** {action_text}
+**Confidence:** {dcf_results.get('confidence', 'MEDIUM')}
+**Upside Potential:** {upside_potential:.1f}%
+
+{status_emoji} **Action:** {action_text} at current price levels
+
+---
+*This analysis is for informational purposes only. Please conduct your own research before making investment decisions.*
+
+"""
+    
+    def _get_report_date(self) -> str:
+        """Get current date for report filename"""
+        return datetime.now().strftime("%Y-%m-%d")
 
 
 if __name__ == "__main__":

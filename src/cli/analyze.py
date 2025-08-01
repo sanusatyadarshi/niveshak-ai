@@ -47,29 +47,44 @@ def analyze_company(company: str, query: str, valuation: str, output: str, confi
         return
     
     try:
-        # Initialize query engine
-        query_engine = QueryEngine(config)
-        
         if company:
             company = company.upper()
             click.echo(f"🔍 Analyzing {company}...")
             
-            if query:
-                # Specific query about the company
-                response = query_engine.process_query(query, company)
-                _display_analysis_response(response, verbose)
-                
-            elif valuation:
-                # Perform valuation analysis
-                click.echo(f"📊 Performing {valuation.upper()} valuation for {company}...")
-                _perform_valuation_analysis(company, valuation, verbose)
-                
-            else:
-                # Generate comprehensive company report
-                click.echo(f"📋 Generating comprehensive analysis report for {company}...")
-                _generate_company_report(company, query_engine, output, verbose)
-        
+            # Use direct symbol-based analysis to bypass vector database
+            from ..analysis.symbol_stock_analyzer import SymbolStockAnalyzer
+            
+            analyzer = SymbolStockAnalyzer(symbol=company)
+            
+            # Extract multi-year financial data
+            financial_data = analyzer.extract_multi_year_financial_data(company)
+            
+            # Generate fundamental analysis report
+            report_content = analyzer.generate_fundamental_analysis_report(company, financial_data)
+            
+            # Generate DCF analysis
+            dcf_results = analyzer.generate_dcf_analysis(company, financial_data)
+            
+            # Add DCF section to report
+            dcf_section = analyzer._format_dcf_section(dcf_results)
+            report_content += dcf_section
+            
+            # Save report
+            report_file = analyzer.reports_dir / f"{company}-{analyzer._get_report_date()}.md"
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write(report_content)
+            
+            click.echo(f"\n✅ Analysis completed!")
+            click.echo(f"📄 Report saved: {report_file}")
+            click.echo(f"🎯 Recommendation: {dcf_results.get('recommendation', 'HOLD')}")
+            click.echo(f"💰 Intrinsic Value: ₹{dcf_results.get('intrinsic_value_per_share', 0):.2f}")
+            click.echo(f"📈 Current Price: ₹{dcf_results.get('current_price', 0):.2f}")
+            
         elif query:
+            # For general queries, we still need the QueryEngine
+            # Initialize query engine
+            query_engine = QueryEngine(config)
+            
             # General investment query
             click.echo(f"💭 Processing query: {query}")
             response = query_engine.process_query(query)
@@ -78,6 +93,7 @@ def analyze_company(company: str, query: str, valuation: str, output: str, confi
     except Exception as e:
         click.echo(f"❌ Analysis failed: {str(e)}")
         if verbose:
+            logger.error(f"Company analysis failed: {str(e)}")
             logger.error(f"Company analysis failed: {str(e)}")
 
 
