@@ -45,32 +45,35 @@ block content %}
           >
             View
           </button>
-          <div class="dropdown" style="position: relative; display: inline-block;">
-            <button 
-              class="btn btn-success dropdown-toggle" 
-              style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+          <div
+            class="dropdown"
+            style="position: relative; display: inline-block"
+          >
+            <button
+              class="btn btn-success dropdown-toggle"
+              style="padding: 0.5rem 1rem; font-size: 0.9rem"
               onclick="toggleDropdown('{{ loop.index0 }}')"
             >
               Download ▼
             </button>
-            <div 
-              id="dropdown-{{ loop.index0 }}" 
-              class="dropdown-content" 
+            <div
+              id="dropdown-{{ loop.index0 }}"
+              class="dropdown-content"
               style="
                 display: none;
                 position: absolute;
                 right: 0;
                 background-color: white;
                 min-width: 160px;
-                box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+                box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
                 border: 1px solid #ddd;
                 border-radius: 4px;
                 z-index: 1;
                 margin-top: 2px;
               "
             >
-              <a 
-                href="/api/reports/{{ report.filename }}" 
+              <a
+                href="/api/reports/{{ report.filename }}"
                 style="
                   color: black;
                   padding: 12px 16px;
@@ -83,8 +86,8 @@ block content %}
               >
                 📄 Download as MD
               </a>
-              <a 
-                href="/api/reports/{{ report.filename }}/download-pdf" 
+              <a
+                href="/api/reports/{{ report.filename }}/download-pdf"
                 style="
                   color: black;
                   padding: 12px 16px;
@@ -330,20 +333,20 @@ block content %}
   function toggleDropdown(index) {
     const dropdown = document.getElementById(`dropdown-${index}`);
     const isVisible = dropdown.style.display === "block";
-    
+
     // Close all dropdowns first
-    document.querySelectorAll('.dropdown-content').forEach(dd => {
+    document.querySelectorAll(".dropdown-content").forEach((dd) => {
       dd.style.display = "none";
     });
-    
+
     // Toggle current dropdown
     dropdown.style.display = isVisible ? "none" : "block";
   }
 
   // Close dropdowns when clicking outside
-  document.addEventListener('click', function(e) {
-    if (!e.target.matches('.dropdown-toggle')) {
-      document.querySelectorAll('.dropdown-content').forEach(dd => {
+  document.addEventListener("click", function (e) {
+    if (!e.target.matches(".dropdown-toggle")) {
+      document.querySelectorAll(".dropdown-content").forEach((dd) => {
         dd.style.display = "none";
       });
     }
