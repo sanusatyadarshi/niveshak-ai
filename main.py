@@ -20,7 +20,7 @@ except ImportError:
 # Add src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from src.utils.logger import setup_logging, get_logger
+from src.utils import NiveshakLogger, logger
 
 
 def main():
@@ -100,8 +100,7 @@ For more information, visit: https://github.com/yourusername/niveshak-ai
     
     # Setup logging
     try:
-        setup_logging(args.config)
-        logger = get_logger(__name__)
+        NiveshakLogger.setup_logging()
         
         if args.verbose:
             import logging
@@ -111,7 +110,6 @@ For more information, visit: https://github.com/yourusername/niveshak-ai
         
     except Exception as e:
         print(f"Warning: Could not setup logging: {e}")
-        logger = None
     
     # Handle commands
     try:

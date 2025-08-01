@@ -17,9 +17,7 @@ from openai import OpenAI
 import ollama
 
 from ..embedding.embedder import EmbeddingManager
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
+from ..utils import logger
 
 
 @dataclass

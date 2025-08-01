@@ -18,9 +18,7 @@ from ..analysis.valuation import DCFAnalyzer, RelativeValuation, create_dcf_anal
 
 # Load environment variables from .env file
 load_dotenv()
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
+from ..utils import logger
 
 
 @click.command()

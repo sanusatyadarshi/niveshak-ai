@@ -31,7 +31,7 @@ import yfinance as yf
 sys.path.append(str(Path(__file__).parent.parent))
 
 from analysis.dcf_calculation import dcf_intrinsic_valuation
-from ..utils.fallback_data import FallbackDataService
+from ..utils import FallbackDataService
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class SymbolStockAnalyzer:
             from analysis.llm_pdf_analyzer import LLMPDFAnalyzer
             self.pdf_analyzer = LLMPDFAnalyzer()
         except Exception as e:
-            print(f"⚠️  Could not initialize LLM PDF analyzer: {e}")
+            logger.warning(f"Could not initialize LLM PDF analyzer: {e}")
             self.pdf_analyzer = None
         
     def get_stock_symbol_and_report(self):
@@ -64,7 +64,7 @@ class SymbolStockAnalyzer:
         symbol = input("Enter the NSE or BSE stock symbol (e.g., RELIANCE, TCS, ITC): ").strip().upper()
         
         if not symbol:
-            print("Error: Please provide a valid stock symbol")
+            logger.error("Please provide a valid stock symbol")
             return None, None
         
         # Get the current year for default
@@ -73,15 +73,15 @@ class SymbolStockAnalyzer:
         # Try to find the most recent annual report in symbol directory
         symbol_dir = Path(f"data/annual_reports/{symbol}")
         if not symbol_dir.exists():
-            print(f"Error: Directory not found: {symbol_dir}")
-            print(f"Please create the directory and add annual reports as: data/annual_reports/{symbol}/year.pdf")
+            logger.error(f"Directory not found: {symbol_dir}")
+            logger.info(f"Please create the directory and add annual reports as: data/annual_reports/{symbol}/year.pdf")
             return None, None
         
         # Look for PDF files in the symbol directory
         for year in range(current_year, current_year - 5, -1):  # Check last 5 years
             pdf_path = symbol_dir / f"{year}.pdf"
             if pdf_path.exists():
-                print(f"Found annual report: {pdf_path}")
+                logger.info(f"Found annual report: {pdf_path}")
                 return symbol, str(pdf_path)
         
         # If no file found, ask user for specific year
@@ -89,8 +89,8 @@ class SymbolStockAnalyzer:
         pdf_path = symbol_dir / f"{year}.pdf"
         
         if not pdf_path.exists():
-            print(f"Error: Annual report not found at {pdf_path}")
-            print(f"Please ensure the file exists as: data/annual_reports/{symbol}/{year}.pdf")
+            logger.error(f"Annual report not found at {pdf_path}")
+            logger.info(f"Please ensure the file exists as: data/annual_reports/{symbol}/{year}.pdf")
             return None, None
         
         return symbol, str(pdf_path)
@@ -105,7 +105,7 @@ class SymbolStockAnalyzer:
         Returns:
             Current stock price
         """
-        print(f"\n📈 Fetching current market price for {symbol}...")
+        logger.info(f"Fetching current market price for {symbol}...")
         
         try:
             # Try NSE first, then BSE
@@ -119,7 +119,7 @@ class SymbolStockAnalyzer:
                     current_price = info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose')
                     
                     if current_price and current_price > 0:
-                        print(f"✅ Current {symbol} price: ₹{current_price:.2f} ({exchange.replace('.', '')} exchange)")
+                        logger.info(f"Current {symbol} price: ₹{current_price:.2f} ({exchange.replace('.', '')} exchange)")
                         return float(current_price)
                         
                 except Exception as e:

@@ -18,9 +18,7 @@ import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, Range
 
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
+from ..utils import logger
 
 
 @dataclass

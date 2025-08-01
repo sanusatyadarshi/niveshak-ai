@@ -13,4 +13,4 @@ __email__ = "your.email@example.com"
 
 # Initialize logging on first import
 from .utils import logger
-logger.setup_logging()
+logger.info("NiveshakAI initialized")
