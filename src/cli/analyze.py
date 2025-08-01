@@ -14,13 +14,11 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from ..analysis.query import QueryEngine, AnalysisReportGenerator
-from ..analysis.valuation import DCFAnalyzer, MultipleValuation, create_dcf_analyzer
+from ..analysis.valuation import DCFAnalyzer, RelativeValuation, create_dcf_analyzer
 
 # Load environment variables from .env file
 load_dotenv()
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
+from ..utils import logger
 
 
 @click.command()
@@ -136,20 +134,24 @@ def _display_analysis_response(response, verbose: bool):
 def _perform_valuation_analysis(company: str, method: str, verbose: bool):
     """Perform valuation analysis using specified method."""
     click.echo(f"⚠️  Valuation analysis requires financial data for {company}")
-    click.echo("This is a placeholder implementation.")
     
-    # TODO: Implement actual valuation analysis
-    # This would require:
-    # 1. Loading financial data for the company
-    # 2. Performing the specified valuation method
-    # 3. Displaying results
+    # Use direct symbol-based analysis
+    from ..analysis.symbol_stock_analyzer import SymbolStockAnalyzer
+    
+    analyzer = SymbolStockAnalyzer(symbol=company)
+    financial_data = analyzer.extract_multi_year_financial_data(company)
+    financial_data['current_price'] = analyzer.get_current_stock_price(company)
     
     if method == 'dcf':
-        click.echo("📊 DCF Analysis would be performed here")
-    elif method == 'pe':
-        click.echo("📊 P/E Multiple Analysis would be performed here")
-    elif method == 'pb':
-        click.echo("📊 P/B Multiple Analysis would be performed here")
+        dcf_results = analyzer.generate_dcf_analysis(company, financial_data)
+        click.echo(f"📊 DCF Intrinsic Value: ₹{dcf_results.get('intrinsic_value_per_share', 0):.2f}")
+        click.echo(f"🎯 Recommendation: {dcf_results.get('recommendation', 'HOLD')}")
+    elif method in ['pe', 'pb']:
+        from ..analysis.valuation import RelativeValuation
+        rel_val = RelativeValuation()
+        results = rel_val.analyze_relative_valuation(financial_data)
+        click.echo(f"📊 Relative Valuation: {results.get('relative_recommendation', 'HOLD')}")
+        click.echo(f"� Current Multiples: {results.get('current_multiples', {})}")
 
 
 def _generate_company_report(company: str, query_engine: QueryEngine, output: Optional[str], verbose: bool):

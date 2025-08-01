@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Simple test script to validate the RAG pipeline step by step.
+RAG Pipeline Integration Test
+Validates the complete RAG (Retrieval Augmented Generation) pipeline
 """
 import os
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 import yaml
 import ollama
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add src to path for import
+sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 # Load environment variables
 load_dotenv()

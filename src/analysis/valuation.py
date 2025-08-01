@@ -8,10 +8,8 @@ This module provides comprehensive valuation methods including:
 - Investment Recommendations
 """
 
-from typing import Dict, Any, List, Tuple
-import math
+from typing import Dict, Any, List
 import logging
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -417,10 +415,6 @@ class RelativeValuation:
             return 'AVOID'
         else:
             return 'HOLD'
-
-
-# Alias for backward compatibility
-MultipleValuation = RelativeValuation
 
 
 def create_dcf_analyzer(discount_rate: float = 0.12, terminal_growth_rate: float = 0.02) -> DCFAnalyzer:

@@ -12,9 +12,7 @@ from pathlib import Path
 from typing import List
 
 from ..ingestion.reports import ReportIngester, list_available_reports, get_company_reports
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
+from ..utils import logger
 
 
 @click.command()

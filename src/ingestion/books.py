@@ -13,11 +13,8 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import yaml
 
-from ..utils.pdf_utils import extract_text_from_pdf, chunk_text
-from ..utils.logger import get_logger
+from ..utils import PDFProcessor, logger
 from ..embedding.embedder import EmbeddingManager
-
-logger = get_logger(__name__)
 
 
 class BookIngester:
@@ -85,7 +82,7 @@ class BookIngester:
         file_ext = Path(file_path).suffix.lower()
         
         if file_ext == '.pdf':
-            return extract_text_from_pdf(file_path)
+            return PDFProcessor.extract_text_from_pdf(file_path)
         elif file_ext == '.txt':
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
@@ -94,7 +91,7 @@ class BookIngester:
     
     def _chunk_text(self, text: str) -> List[str]:
         """Split text into chunks for embedding."""
-        return chunk_text(
+        return PDFProcessor.chunk_text(
             text,
             chunk_size=self.config['embedding']['chunk_size'],
             overlap=self.config['embedding']['chunk_overlap']
@@ -158,8 +155,7 @@ def get_book_metadata(file_path: str) -> Dict[str, Any]:
     Returns:
         Dictionary containing book metadata
     """
-    # TODO: Implement metadata extraction
-    # This could include author, title, publication date, etc.
+    # Extract basic metadata from book file
     return {
         'filename': Path(file_path).name,
         'file_size': os.path.getsize(file_path),
