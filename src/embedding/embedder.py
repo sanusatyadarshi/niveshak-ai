@@ -294,41 +294,6 @@ class QdrantVectorStore(VectorStore):
             return None
 
 
-class WeaviateVectorStore(VectorStore):
-    """Weaviate vector database implementation."""
-    
-    def __init__(self, url: str, class_name: str):
-        """Initialize Weaviate vector store."""
-        self.url = url
-        self.class_name = class_name
-        # TODO: Initialize Weaviate client
-        
-    def add_documents(self, documents: List[Document]) -> bool:
-        """Add documents to Weaviate."""
-        try:
-            # TODO: Implement Weaviate document insertion
-            logger.info(f"Added {len(documents)} documents to Weaviate")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to add documents to Weaviate: {str(e)}")
-            return False
-    
-    def search_similar(self, query_embedding: List[float], top_k: int = 5) -> List[Tuple[Document, float]]:
-        """Search for similar documents in Weaviate."""
-        # TODO: Implement Weaviate similarity search
-        return []
-    
-    def delete_document(self, doc_id: str) -> bool:
-        """Delete a document from Weaviate."""
-        # TODO: Implement document deletion
-        return True
-    
-    def get_document(self, doc_id: str) -> Optional[Document]:
-        """Retrieve a document from Weaviate."""
-        # TODO: Implement document retrieval
-        return None
-
-
 class EmbeddingManager:
     """Manages embedding generation and vector store operations."""
     
@@ -366,12 +331,6 @@ class EmbeddingManager:
                 port=config['port'],
                 collection_name=config['collection_name'],
                 vector_size=config['vector_size']
-            )
-        elif provider == 'weaviate':
-            config = self.config['vector_db']['weaviate']
-            return WeaviateVectorStore(
-                url=config['url'],
-                class_name=config['class_name']
             )
         else:
             raise ValueError(f"Unsupported vector store provider: {provider}")

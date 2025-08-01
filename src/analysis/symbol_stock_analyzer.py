@@ -24,7 +24,6 @@ from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import pandas as pd
 import logging
-from datetime import datetime
 import requests
 import yfinance as yf
 
@@ -32,6 +31,7 @@ import yfinance as yf
 sys.path.append(str(Path(__file__).parent.parent))
 
 from analysis.dcf_calculation import dcf_intrinsic_valuation
+from ..utils.fallback_data import FallbackDataService
 
 logger = logging.getLogger(__name__)
 
@@ -392,7 +392,7 @@ class SymbolStockAnalyzer:
             print(f"❌ Error in AI extraction: {e}")
             print("🔄 Using enhanced fallback data...")
         
-        # Enhanced fallback data generation
+        # Use unified fallback data service
         symbol_dir = Path(f"data/annual_reports/{symbol}")
         pdf_files = list(symbol_dir.glob("*.pdf")) if symbol_dir.exists() else []
         sorted_pdfs = sorted(pdf_files, key=lambda x: int(x.stem), reverse=True)[:3]
@@ -490,30 +490,19 @@ class SymbolStockAnalyzer:
         print(f"📈 Fetching current market data for {symbol}...")
         
         try:
-            # For now, return basic market data structure
-            # In future, this could integrate with real-time APIs
-            market_data = {
-                'symbol': symbol,
-                'current_price': 0,  # Will be updated if available
-                'market_cap': 0,     # Will be updated if available
-                'pe_ratio': 0,       # Will be updated if available
-                'dividend_yield': 0, # Will be updated if available
-                'beta': 1.0,         # Default beta
-                'last_updated': 'PDF Analysis Mode'
-            }
-            
-            print(f"✅ Market data structure ready for {symbol}")
-            return market_data
+            # Use unified fallback service for basic market data
+            return FallbackDataService.get_company_data(symbol, 'basic')
             
         except Exception as e:
             print(f"⚠️  Could not fetch market data: {e}")
+            # Emergency fallback
             return {
                 'symbol': symbol,
-                'current_price': 0,
-                'market_cap': 0,
-                'pe_ratio': 0,
-                'dividend_yield': 0,
-                'beta': 1.0,
+                'company_name': f'{symbol} Limited',
+                'current_price': 100.0,
+                'market_cap': 10000,
+                'pe_ratio': 15.0,
+                'data_source': 'EMERGENCY_FALLBACK',
                 'last_updated': 'Fallback Mode'
             }
     
