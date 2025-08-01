@@ -35,12 +35,13 @@ Build an AI-powered investment analysis tool that combines fundamental analysis 
 - Consistent structure for professional analysis reports
 - Clear buy/hold/sell recommendations
 
-### **4. Symbol-Based Workflow** ✅
+### **4. Symbol-Based Workflow with AI-Powered PDF Analysis** ✅
 
 - Simple input: Stock symbol (NSE/BSE format)
-- Annual reports stored in `/data/annual_reports/SYMBOL-YEAR.pdf` format
-- Manual PDF upload required for precise financial data extraction
-- Standardized file naming for organized annual report management
+- Annual reports stored in `/data/annual_reports/SYMBOL/year.pdf` format (e.g., `/data/annual_reports/ITC/2023.pdf`)
+- **AI-Powered PDF Extraction**: Uses OpenAI API to intelligently extract financial data from last 3 years of annual reports
+- **Automated Fundamental Analysis**: AI analyzes PDF content to populate comprehensive fundamental analysis tables
+- **Multi-Year Trend Analysis**: Extracts 3-year financial trends for DCF calculations and growth assessments
 
 ### **5. Valuation Assessment** ✅
 
@@ -81,10 +82,20 @@ src/
 
 ### **Working Workflows**
 
-1. **PDF Analysis**: Extract data from annual reports and generate basic analysis
-2. **DCF Valuation**: Calculate intrinsic value with markdown reports (e.g., `DummyCo-dcf-2025.md`)
-3. **Knowledge Queries**: Ask investment questions using Philip Fisher's principles
-4. **CLI Commands**: `python3 -m src.cli.analyze ask|company|compare`
+1. **AI-Powered PDF Analysis**: Uses OpenAI API to extract comprehensive financial data from last 3 years of annual reports
+2. **Intelligent Fundamental Analysis**: AI automatically populates all fundamental analysis tables with extracted data
+3. **DCF Valuation**: Calculate intrinsic value with markdown reports (e.g., `ITC-2025-07-31.md`)
+4. **Knowledge Queries**: Ask investment questions using Philip Fisher's principles
+5. **CLI Commands**: `python3 -m src.cli.analyze ask|company|compare`
+
+### **AI-Powered Analysis Pipeline**
+
+1. **PDF Processing**: Extract text and tables from annual reports (2023.pdf, 2024.pdf, 2025.pdf)
+2. **OpenAI Analysis**: Use GPT-4 to analyze financial statements and extract key metrics
+3. **Data Structuring**: Convert AI-extracted data into standardized financial metrics
+4. **Trend Analysis**: Calculate 3-year growth rates and financial trends
+5. **Fundamental Reporting**: Auto-populate comprehensive fundamental analysis tables
+6. **DCF Integration**: Use extracted data for accurate intrinsic value calculations
 
 ---
 
@@ -92,7 +103,8 @@ src/
 
 ### **AI & ML**
 
-- **Local LLM**: DeepSeek R1 7B via Ollama (no API costs)
+- **Primary Analysis**: OpenAI GPT-4 API for PDF analysis and financial data extraction
+- **Local LLM**: DeepSeek R1 7B via Ollama (for knowledge queries)
 - **Embeddings**: Nomic-embed-text (768 dimensions)
 - **Vector DB**: Qdrant (localhost:6333)
 - **Knowledge Base**: Philip Fisher's "Common Stocks and Uncommon Profits" (913 chunks)
