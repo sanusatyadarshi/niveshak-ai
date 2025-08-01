@@ -211,83 +211,20 @@ class SymbolStockAnalyzer:
                 
                 print(f"✅ Financial data extracted from PDF successfully")
                 
-                # Convert extracted data to our format
-                financial_data = self._convert_extracted_data_to_format(symbol, extracted_data)
-                
-                return financial_data
+                # Convert and return extracted data
+                return extracted_data if extracted_data else self.extract_multi_year_financial_data(symbol)
                 
             except ImportError:
-                print("⚠️  PDF extraction module not available. Using fallback method.")
-                return self._extract_basic_pdf_data(symbol, pdf_path)
+                print("⚠️  PDF extraction module not available. Using enhanced fallback data.")
+                return self.extract_multi_year_financial_data(symbol)
                 
         except Exception as e:
             logger.error(f"Error extracting from PDF: {str(e)}")
             print(f"❌ Failed to extract from PDF: {str(e)}")
-            print(f"🔄 Falling back to basic data extraction...")
+            print(f"🔄 Falling back to enhanced data extraction...")
             
-            return self._extract_basic_pdf_data(symbol, pdf_path)
+            return self.extract_multi_year_financial_data(symbol)
     
-    def _extract_basic_pdf_data(self, symbol: str, pdf_path: str) -> Dict[str, Any]:
-        """
-        Basic PDF data extraction as fallback
-        
-        Args:
-            symbol: Stock symbol
-            pdf_path: Path to PDF file
-            
-        Returns:
-            Basic financial data structure
-        """
-        try:
-            import pdfplumber
-            
-            with pdfplumber.open(pdf_path) as pdf:
-                text = ""
-                for page in pdf.pages[:10]:  # Check first 10 pages
-                    text += page.extract_text() or ""
-            
-            # Basic extraction logic - look for key financial figures
-            # This is a simplified approach - real implementation would be more sophisticated
-            
-            print(f"✅ Basic data extracted from {Path(pdf_path).name}")
-            
-            # Return mock data with PDF source indication
-            financial_data = self._get_mock_financial_data(symbol)
-            financial_data['data_source'] = 'PDF_EXTRACTED'
-            financial_data['pdf_file'] = Path(pdf_path).name
-            
-            return financial_data
-            
-        except Exception as e:
-            logger.error(f"Basic PDF extraction failed: {str(e)}")
-            print(f"⚠️  PDF processing failed. Using mock data for demonstration.")
-            
-            # Return mock data but indicate it's not from PDF
-            financial_data = self._get_mock_financial_data(symbol)
-            financial_data['data_source'] = 'MOCK_DATA'
-            financial_data['pdf_file'] = Path(pdf_path).name
-            
-            return financial_data
-    
-    def _convert_extracted_data_to_format(self, symbol: str, extracted_data: Any) -> Dict[str, Any]:
-        """
-        Convert data from pdf_extract_and_report.py to our format
-        
-        Args:
-            symbol: Stock symbol
-            extracted_data: Data from PDF extraction function
-            
-        Returns:
-            Formatted financial data dictionary
-        """
-        # TODO: Implement conversion from extracted_data format to our format
-        # This depends on what pdf_extract_and_report.py returns
-        
-        # For now, return mock data but indicate it's from PDF extraction
-        financial_data = self._get_mock_financial_data(symbol)
-        financial_data['data_source'] = 'PDF_EXTRACTED'
-        
-        return financial_data
         """
         Fetch current year financial data for the stock
         
@@ -329,14 +266,14 @@ class SymbolStockAnalyzer:
                     logger.warning(f"Failed to fetch from {exchange}: {str(e)}")
                     continue
             
-            # If both fail, return mock data for demonstration
-            print("⚠️  Could not fetch live data. Using mock data for demonstration.")
-            return self._get_mock_financial_data(symbol)
+            # If both fail, use enhanced fallback data for demonstration
+            print("⚠️  Could not fetch live data. Using enhanced fallback data for demonstration.")
+            return self.extract_multi_year_financial_data(symbol)
             
         except Exception as e:
             logger.error(f"Error fetching financial data: {str(e)}")
             print(f"❌ Failed to fetch financial data: {str(e)}")
-            return self._get_mock_financial_data(symbol)
+            return self.extract_multi_year_financial_data(symbol)
     
     def _extract_key_metrics(self, info: Dict, financials: pd.DataFrame, 
                            balance_sheet: pd.DataFrame, cash_flow: pd.DataFrame) -> Dict[str, Any]:
@@ -407,7 +344,7 @@ class SymbolStockAnalyzer:
             
         except Exception as e:
             logger.error(f"Error extracting metrics: {str(e)}")
-            return self._get_mock_financial_data("UNKNOWN")
+            return self.extract_multi_year_financial_data("UNKNOWN")
     
     def extract_multi_year_financial_data(self, symbol: str) -> Dict[str, Any]:
         """
@@ -434,23 +371,17 @@ class SymbolStockAnalyzer:
             
         except ImportError as e:
             print(f"⚠️  OpenAI PDF analyzer not available: {e}")
-            print("🔄 Falling back to manual data extraction...")
-            return self._get_fallback_multi_year_data(symbol)
+            print("🔄 Using enhanced fallback data...")
         except Exception as e:
             print(f"❌ Error in AI extraction: {e}")
-            print("🔄 Falling back to manual data extraction...")
-            return self._get_fallback_multi_year_data(symbol)
-
-    def _get_fallback_multi_year_data(self, symbol: str) -> Dict[str, Any]:
-        """Fallback multi-year data when extraction fails"""
+            print("🔄 Using enhanced fallback data...")
         
+        # Enhanced fallback data generation
         symbol_dir = Path(f"data/annual_reports/{symbol}")
-        
-        # Find available PDF files
         pdf_files = list(symbol_dir.glob("*.pdf")) if symbol_dir.exists() else []
         sorted_pdfs = sorted(pdf_files, key=lambda x: int(x.stem), reverse=True)[:3]
         
-        print(f"📁 Using fallback data for {len(sorted_pdfs)} annual reports:")
+        print(f"📁 Using enhanced fallback data for {len(sorted_pdfs)} annual reports:")
         for pdf in sorted_pdfs:
             print(f"   - {pdf.name}")
         
@@ -526,7 +457,7 @@ class SymbolStockAnalyzer:
                 'years_analyzed': len(sorted_pdfs)
             }
         
-        print("✅ Fallback multi-year financial data prepared")
+        print("✅ Enhanced fallback financial data prepared")
         return multi_year_data
 
     def fetch_financial_data(self, symbol: str) -> Dict[str, Any]:
@@ -569,38 +500,6 @@ class SymbolStockAnalyzer:
                 'beta': 1.0,
                 'last_updated': 'Fallback Mode'
             }
-
-    def _get_mock_financial_data(self, symbol: str) -> Dict[str, Any]:
-        """Get mock financial data for demonstration"""
-        return {
-            'symbol': symbol,
-            'company_name': f'{symbol} Ltd',
-            'sector': 'Consumer Goods',
-            'industry': 'Manufacturing',
-            'market_cap': 50000,  # Cr
-            'current_price': 2500,
-            'total_revenue': 10000,  # Cr
-            'net_income': 1500,  # Cr
-            'gross_profit': 4000,  # Cr
-            'total_assets': 15000,  # Cr
-            'total_debt': 2000,  # Cr
-            'shareholders_equity': 13000,  # Cr
-            'cash_and_equivalents': 1000,  # Cr
-            'operating_cash_flow': 2000,  # Cr
-            'capital_expenditure': 500,  # Cr
-            'free_cash_flow': 1500,  # Cr
-            'pe_ratio': 20,
-            'pb_ratio': 3.5,
-            'roe': 12.0,
-            'roa': 10.0,
-            'profit_margin': 15.0,
-            'gross_margin': 40.0,
-            'debt_to_equity': 0.15,
-            'dividend_yield': 2.5,
-            'shares_outstanding': 20,  # Cr
-            'financial_year': 2024,
-            'exchange': 'NSE'
-        }
     
     def generate_fundamental_analysis_report(self, symbol: str, financial_data: Dict[str, Any]) -> str:
         """
@@ -638,11 +537,11 @@ class SymbolStockAnalyzer:
                 )
                 
             except Exception as e:
-                logger.warning(f"AI analysis failed, using basic template: {str(e)}")
-                populated_template = self._populate_template_basic(populated_template, symbol, financial_data)
+                logger.warning(f"AI analysis failed, using canonical template: {str(e)}")
+                populated_template = self._populate_template_with_financial_data(populated_template, symbol, financial_data)
         else:
-            # Use basic population for fallback data
-            populated_template = self._populate_template_basic(populated_template, symbol, financial_data)
+            # Use canonical population for fallback data
+            populated_template = self._populate_template_with_financial_data(populated_template, symbol, financial_data)
         
         return populated_template
 
@@ -978,99 +877,6 @@ class SymbolStockAnalyzer:
             )
         }
 
-    def _fill_company_questions_table(self, template: str, company_answers: Dict[str, tuple]) -> str:
-        """Fill the company questions table with actual answers"""
-        
-        for question, (answer, judgement) in company_answers.items():
-            # Match the exact pattern: | Question | (8 spaces) | (19 spaces) |
-            old_pattern = f"| {question} |        |                   |"
-            new_row = f"| {question} | {answer} | {judgement} |"
-            
-            template = template.replace(old_pattern, new_row)
-        
-        return template
-
-    def _fill_financial_metrics_table(self, template: str, financial_metrics: Dict[str, tuple]) -> str:
-        """Fill the financial metrics table with actual values"""
-        
-        for metric, (value, interpretation) in financial_metrics.items():
-            # Match the exact pattern: | Metric | (5 spaces) | (28 spaces) |
-            old_pattern = f"| {metric} |       |                            |"
-            new_row = f"| {metric} | {value} | {interpretation} |"
-            
-            template = template.replace(old_pattern, new_row)
-        
-        return template
-
-    def _fill_ratio_analysis_table(self, template: str, ratio_analysis: Dict[str, tuple]) -> str:
-        """Fill the ratio analysis table with actual values"""
-        
-        for ratio, (value, judgement, notes) in ratio_analysis.items():
-            # Match the exact pattern: | Ratio | (5 spaces) | (9 spaces) | (20 spaces) |
-            old_pattern = f"| {ratio} |       |           |                      |"
-            new_row = f"| {ratio} | {value} | {judgement} | {notes} |"
-            
-            template = template.replace(old_pattern, new_row)
-        
-        return template
-
-    def _populate_template_basic(self, template: str, symbol: str, financial_data: Dict[str, Any]) -> str:
-        """Populate template with basic financial data when AI analysis is not available"""
-        
-        # Add basic financial metrics to the template
-        basic_analysis = f"""
-
----
-
-## 📊 Basic Financial Analysis
-
-### 💰 Key Metrics
-- **Revenue:** ₹{financial_data.get('revenue', 0):,.0f} Cr
-- **Net Profit:** ₹{financial_data.get('net_profit', 0):,.0f} Cr
-- **Free Cash Flow:** ₹{financial_data.get('free_cash_flow', 0):,.0f} Cr
-- **Shares Outstanding:** {financial_data.get('shares_outstanding', 0):,.0f} Cr
-- **Current Price:** ₹{financial_data.get('current_price', 0):.2f}
-
-### 📈 Growth Metrics
-- **Revenue Growth:** {financial_data.get('revenue_growth', 0):.1f}%
-- **FCF Growth:** {financial_data.get('fcf_growth', 0):.1f}%
-
-### 🔍 Data Source
-{financial_data.get('data_source', 'Enhanced Fallback Data')}
-
-"""
-        
-        return template + basic_analysis
-
-    def _generate_basic_fundamental_report(self, symbol: str, financial_data: Dict[str, Any]) -> str:
-        """
-        Generate basic fundamental analysis report as fallback
-        
-        Args:
-            symbol: Stock symbol
-            financial_data: Financial data dictionary
-            
-        Returns:
-            Basic report content
-        """
-        company_name = financial_data.get('company_name', f'{symbol} Limited')
-        year = financial_data.get('latest_year', '2024')
-        
-        return f"""# 🏢 Basic Fundamental Analysis — {company_name} (FY {year})
-
-## Financial Highlights
-
-| Metric | Value |
-|--------|-------|
-| Revenue | ₹{financial_data.get('revenue', 0):,.0f} Cr |
-| Net Profit | ₹{financial_data.get('net_profit', 0):,.0f} Cr |
-| Profit Margin | {financial_data.get('profit_margin', 0):.1f}% |
-| ROE | {financial_data.get('roe', 0):.1f}% |
-| Debt/Equity | {financial_data.get('debt_to_equity', 0):.2f} |
-
-*Note: This is a basic analysis. For comprehensive AI-powered analysis, please configure OpenAI API.*
-"""
-
     def _get_judgment_for_answer(self, question: str, answer: str) -> str:
         """Get judgment for company overview questions"""
         if "does the company do" in question.lower():
@@ -1330,70 +1136,19 @@ class SymbolStockAnalyzer:
             
         except Exception as e:
             logger.error(f"DCF analysis failed: {str(e)}")
-            # Fallback to existing DCF calculation
-            return self._fallback_dcf_analysis(symbol, financial_data)
-    
-    def _fallback_dcf_analysis(self, symbol: str, financial_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback DCF analysis using existing dcf_calculation module"""
-        try:
-            from analysis.dcf_calculation import dcf_intrinsic_valuation
+            print(f"⚠️  Enhanced DCF analysis failed, using valuation module fallback...")
             
-            # Get key parameters for DCF
-            fcf = financial_data.get('free_cash_flow', 0) * 10000000  # Convert Cr to actual
-            shares = financial_data.get('shares_outstanding', 0) * 10000000  # Convert Cr to actual
-            debt = financial_data.get('total_debt', 0) * 10000000
-            cash = financial_data.get('cash_and_equivalents', 0) * 10000000
-            
-            # Calculate DCF
-            dcf_result = dcf_intrinsic_valuation(
-                base_fcf=fcf,
-                fcf_growth_rate_5yr=0.10,
-                fcf_growth_rate_10yr=0.05,
-                terminal_growth_rate=0.02,
-                discount_rate=0.12,
-                total_debt=debt,
-                cash_and_equivalents=cash,
-                shares_outstanding=shares
-            )
-            
-            # Get current price and calculate upside potential
-            current_price = financial_data.get('current_price', 0)
-            intrinsic_value = dcf_result.get('intrinsic_value_per_share', 0)
-            
-            if current_price > 0 and intrinsic_value > 0:
-                upside_potential = ((intrinsic_value - current_price) / current_price) * 100
-                if upside_potential > 15:
-                    recommendation = "BUY"
-                elif upside_potential > -10:
-                    recommendation = "HOLD"
-                else:
-                    recommendation = "AVOID"
-            else:
-                upside_potential = 0.0
-                recommendation = "HOLD"
-            
-            # Format result to match expected structure
-            return {
-                'intrinsic_value_per_share': intrinsic_value,
-                'current_price': current_price,
-                'recommendation': recommendation,
-                'upside_potential': upside_potential,
-                'margin_of_safety': dcf_result.get('margin_of_safety_percent', 0),
-                'enterprise_value': dcf_result.get('enterprise_value', 0),
-                'equity_value': dcf_result.get('equity_value', 0)
-            }
-            
-        except Exception as e:
-            logger.error(f"Fallback DCF analysis failed: {str(e)}")
-            return {
-                'intrinsic_value_per_share': 100.0,
-                'current_price': financial_data.get('current_price', 0),
-                'recommendation': 'HOLD',
-                'upside_potential': 0.0,
-                'margin_of_safety': 0.0,
-                'enterprise_value': 0,
-                'equity_value': 0
-            }
+            # Use the valuation module as fallback
+            try:
+                from analysis.valuation import DCFAnalyzer
+                
+                analyzer = DCFAnalyzer()
+                return analyzer.calculate_dcf(financial_data, self.get_current_stock_price(symbol))
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback DCF also failed: {str(fallback_error)}")
+                print(f"❌ DCF calculation not available")
+                return {'error': 'DCF calculation failed', 'recommendation': 'Manual analysis needed'}
 
 
 def main():
