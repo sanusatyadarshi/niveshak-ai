@@ -34,6 +34,7 @@ Optimized for performance, accuracy, and cost-effectiveness using OpenAI's lates
 - 🔄 **Hybrid Architecture**: OpenAI primary with local Ollama fallback for reliability
 - 🛠️ **Flexible Configuration**: Optimized for performance and cost-effectiveness
 - 📱 **CLI Interface**: Easy command-line interaction with future web UI planned
+- 🚀 **One-Command Analysis**: New `analyze.sh` script for instant company analysis
 - ⚡ **Pre-loaded Content**: Ships with Philip Fisher's investment wisdom ready to query
 
 ---
@@ -98,11 +99,36 @@ python main.py analyze company --company ITC --query "Is ITC a good investment?"
 
 ---
 
-## 📊 Stock Analysis Workflow
+## 🚀 One-Command Analysis
+
+### Quick Start (Recommended)
+
+**NEW: Added `analyze.sh` - Analyze any company with a single command!**
+
+```bash
+# Clone and run ITC analysis immediately
+git clone <repository-url>
+cd niveshak-ai
+./analyze.sh ITC
+
+# Or analyze other companies:
+./analyze.sh RELIANCE
+./analyze.sh TCS "Growth analysis"
+./analyze.sh HDFC "Dividend analysis"
+```
+
+The `analyze.sh` script automatically:
+- ✅ Sets up virtual environment if needed
+- ✅ Installs missing dependencies  
+- ✅ Creates required directories
+- ✅ Validates annual report presence
+- ✅ Runs AI-powered company analysis
+- ✅ Generates comprehensive report with timestamp
+- ✅ Provides helpful guidance and next steps
 
 ### Directory Structure for Annual Reports
 
-Organize your annual reports using the following structure:
+Organize your annual reports using this structure:
 
 ```
 data/annual_reports/
@@ -119,26 +145,12 @@ data/annual_reports/
     └── ...
 ```
 
-### Running AI-Powered Stock Analysis
-
-1. **Prepare Annual Reports**: Place 3 years of annual reports in the appropriate directory structure
-2. **Configure OpenAI API**: Set up your API key (see setup instructions above)
-3. **Run Analysis**: The system will automatically use AI for intelligent data extraction
-4. **Review Report**: Check the AI-generated analysis in the `reports/` folder
-
-#### Example: ITC Analysis with AI
+### Manual Analysis Commands
 
 ```bash
-# Run ITC analysis with AI extraction
+# Alternative: Run analysis manually
+source venv/bin/activate
 python main.py analyze company --company ITC --query "Complete fundamental analysis"
-
-# AI will automatically:
-# - Extract financial data from annual report PDFs
-# - Analyze business fundamentals
-# - Generate comprehensive tables
-# - Provide investment insights
-
-# Report generated in: reports/ folder
 ```
 
 ### OpenAI-Powered Analysis Features
