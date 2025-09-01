@@ -155,13 +155,19 @@ class LLMPDFAnalyzer:
             except:
                 pass
         
-        print(f"🔍 Debug - Final API key: {api_key[:15]}..." if api_key else "🔍 Debug - API key: NOT_FOUND")
+        print("🔍 Debug - API key status: FOUND" if api_key else "🔍 Debug - API key: NOT_FOUND")
         
         if not api_key:
             raise ValueError("OpenAI API key not found in environment variables")
         
         if api_key.startswith('${'):
+            print(f"🔍 Debug - Template detected: {api_key}")
             raise ValueError(f"API key is template variable: {api_key}")
+        
+        # Additional validation - check if it's a valid API key format
+        if not api_key.startswith('sk-'):
+            print(f"🔍 Debug - Invalid format: {api_key[:50]}...")
+            raise ValueError(f"Invalid OpenAI API key format. Expected sk-*, got: {api_key[:50]}...")
         
         self.client = openai.OpenAI(api_key=api_key)
         self.model = "gpt-4o"

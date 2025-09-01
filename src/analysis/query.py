@@ -100,8 +100,15 @@ class QueryEngine:
                  config_path: str = "config/settings.yaml",
                  persona_path: str = "config/persona.yaml"):
         """Initialize query engine."""
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
+        # Load environment variables first
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+        
+        # Load config with environment variable substitution
+        self.config = self._load_config(config_path)
         
         self.embedding_manager = EmbeddingManager(self.config)
         self.persona_manager = PersonaManager(persona_path)
@@ -145,6 +152,28 @@ class QueryEngine:
             
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
+    
+    def _load_config(self, config_path: str) -> Dict[str, Any]:
+        """Load configuration from YAML file and substitute environment variables"""
+        try:
+            with open(config_path, 'r') as f:
+                config_content = f.read()
+            
+            # Substitute environment variables
+            import re
+            
+            def replace_env_vars(match):
+                var_name = match.group(1)
+                return os.getenv(var_name, match.group(0))
+            
+            # Replace ${VAR_NAME} with actual environment variable values
+            config_content = re.sub(r'\$\{([^}]+)\}', replace_env_vars, config_content)
+            
+            # Parse the YAML after substitution
+            return yaml.safe_load(config_content)
+        except Exception as e:
+            logger.error(f"Could not load config from {config_path}: {e}")
+            return {}
     
     def process_query(self, query: str, company_symbol: Optional[str] = None) -> AnalysisResponse:
         """

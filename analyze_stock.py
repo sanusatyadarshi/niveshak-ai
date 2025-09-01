@@ -6,6 +6,14 @@ Analyzes any NSE/BSE stock using the SymbolStockAnalyzer
 
 import sys
 import os
+
+# Load environment variables first
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from analysis.symbol_stock_analyzer import SymbolStockAnalyzer
