@@ -41,15 +41,16 @@ Optimized for performance, accuracy, and cost-effectiveness using OpenAI's lates
 
 ## 🔧 Setup & Configuration
 
-### 1. Basic Installation
+### 1. Quick Start with analyze.sh
 
 ```bash
-# Clone repository
+# Clone repository and run immediate analysis
 git clone <repository-url>
 cd niveshak-ai
+./analyze.sh ITC
 
-# Install dependencies
-pip install -r requirements.txt
+# Or analyze other companies
+./analyze.sh RELIANCE "Financial health analysis"
 ```
 
 ### 2. Configure OpenAI API (Primary)
@@ -179,20 +180,19 @@ Each AI analysis generates a comprehensive report including:
 
 #### Quick Setup (Recommended)
 
+Use the simple `analyze.sh` script for immediate analysis:
+
 ```bash
 git clone https://github.com/<your-github-username>/niveshak-ai.git
 cd niveshak-ai
-./setup.sh
+./analyze.sh ITC
 ```
 
-The setup script will:
-
-- Create a Python virtual environment
-- Install all dependencies
-- Download and setup Ollama with required models
-- Start local Qdrant vector database
-- Generate configuration templates
-- Set up directory structure
+The script automatically handles:
+- Virtual environment setup
+- Dependency installation
+- Directory creation
+- Company analysis execution
 
 #### Manual Setup
 
@@ -243,18 +243,6 @@ docker run -p 6333:6333 qdrant/qdrant
 python test_rag.py
 ```
 
-- Make scripts executable
-
-#### Manual Setup
-
-```bash
-git clone https://github.com/<your-github-username>/niveshak-ai.git
-cd niveshak-ai
-python -m venv venv
-source venv/bin/activate   # Linux/Mac
-venv\Scripts\activate      # Windows
-pip install -r requirements.txt
-```
 
 ### Configuration
 
